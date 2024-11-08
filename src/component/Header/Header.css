@@ -5,3 +5,21 @@
 .custom-height{
     height: 41px;
 }
+.dropdown-toggle{
+        border: 1px solid #DADADA !important;
+    border-radius: 7px !important;
+    padding: 4px 8px !important;
+    font-size: 12px !important;
+    color: #000 !important; 
+    background-color: transparent !important;
+}
+.dropdown-toggle::after {
+    display: none !important;
+}
+.dropdown{
+    display: flex !important;
+}
+.eyeIcon{
+    width: 16px;
+    margin-right: 5px;
+}
