@@ -1,40 +1,46 @@
 import React from 'react';
 import { Box, Button, TextField, Typography } from '@mui/material';
-import LogoBackground from '../../assest/login-background.jpg'
-import LogoImage from '../../assest/logo-dark.png'
+import LogoBackground from '../../assest/login-background.jpg';
+import LogoImage from '../../assest/logo-dark.png';
 import './LoginPage.css';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiService from '../../ApiService/service';
 
-import axios from 'axios';
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [credentials, setCredentials] = useState({
+    email: '',
+    password: '',
+  });
 
   const navigate = useNavigate();
 
-  const handleLogin = async (credentials) => {
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setCredentials({
+      ...credentials,
+      [name]: value,
+    });
+  };
+
+  const handleLogin = async () => {
     try {
-      const response = await apiService.post('auth/login', {username: email, password: password});
+      const response = await apiService.post('auth/login', {
+        username: credentials.email,
+        password: credentials.password,
+      });
       // Save token or any relevant data
       sessionStorage.setItem('authToken', response.data.access_token);
-      console.log(response)
-      // Redirect to home page
+      console.log(response);
+      // Redirect to the home page
       navigate('/home');
     } catch (error) {
       console.error('Login failed:', error);
     }
   };
 
-  // JSX for your login form goes here
-
   return (
-    <Box
-      className="login-page"
-      display="flex"
-      height="100vh"
-    >
+    <Box className="login-page" display="flex" height="100vh">
       <Box
         flex={1}
         display="flex"
@@ -53,9 +59,10 @@ const Login = () => {
         <Box component="form" width="100%" maxWidth="400px">
           <TextField
             fullWidth
-            type="email" 
-            value={email} 
-            onChange={(e) => setEmail(e.target.value)}
+            type="email"
+            name="email"
+            value={credentials.email}
+            onChange={handleInputChange}
             variant="outlined"
             label="Username"
             margin="normal"
@@ -66,11 +73,11 @@ const Login = () => {
             variant="outlined"
             label="Password"
             margin="normal"
-            type="password" 
-            value={password}
-             onChange={(e) => setPassword(e.target.value)}
+            type="password"
+            name="password"
+            value={credentials.password}
+            onChange={handleInputChange}
             required
-            
           />
           <Button
             fullWidth
@@ -78,36 +85,27 @@ const Login = () => {
             color="primary"
             sx={{ mt: 2 }}
             onClick={handleLogin}
-
           >
             Submit
           </Button>
-          <Button
-            fullWidth
-            variant="outlined"
-            color="primary"
-            sx={{ mt: 2 }}
-          >
+          <Button fullWidth variant="outlined" color="primary" sx={{ mt: 2 }}>
             Login via SSO
           </Button>
         </Box>
       </Box>
-
-      <Box 
+      <Box
         className="gradient-background"
         flex={1}
         position="relative"
         sx={{
-        // background: `linear-gradient(344.87deg, #102191 -17%, #202026 57%), url(${LogoBackground})`,
-            //   background: 'linear-gradient(344.87deg, #102191 -17%, #202026 57%)',
-            backgroundImage: `url(${LogoBackground})`,
+          backgroundImage: `url(${LogoBackground})`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           color: '#ffffff',
           borderRadius: '15px',
           width: '100%',
           right: '1%',
-          top: '15px'
+          top: '15px',
         }}
       >
         <Box
@@ -126,7 +124,7 @@ const Login = () => {
           <img
             src={LogoImage}
             alt="XERAGO Logo"
-            style={{ width: '385px', height: 'auto', marginRight: '88px'}} 
+            style={{ width: '385px', height: 'auto', marginRight: '88px' }}
           />
         </Box>
       </Box>
