@@ -3,8 +3,32 @@ import { Box, Button, TextField, Typography } from '@mui/material';
 import LogoBackground from '../../assest/login-background.jpg'
 import LogoImage from '../../assest/logo-dark.png'
 import './LoginPage.css';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import apiService from '../../ApiService/service';
 
+import axios from 'axios';
 const Login = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const navigate = useNavigate();
+
+  const handleLogin = async (credentials) => {
+    try {
+      const response = await apiService.post('auth/login', {username: email, password: password});
+      // Save token or any relevant data
+      sessionStorage.setItem('authToken', response.data.access_token);
+      console.log(response)
+      // Redirect to home page
+      navigate('/home');
+    } catch (error) {
+      console.error('Login failed:', error);
+    }
+  };
+
+  // JSX for your login form goes here
+
   return (
     <Box
       className="login-page"
@@ -29,6 +53,9 @@ const Login = () => {
         <Box component="form" width="100%" maxWidth="400px">
           <TextField
             fullWidth
+            type="email" 
+            value={email} 
+            onChange={(e) => setEmail(e.target.value)}
             variant="outlined"
             label="Username"
             margin="normal"
@@ -38,15 +65,20 @@ const Login = () => {
             fullWidth
             variant="outlined"
             label="Password"
-            type="password"
             margin="normal"
+            type="password" 
+            value={password}
+             onChange={(e) => setPassword(e.target.value)}
             required
+            
           />
           <Button
             fullWidth
             variant="contained"
             color="primary"
             sx={{ mt: 2 }}
+            onClick={handleLogin}
+
           >
             Submit
           </Button>
