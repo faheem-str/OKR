@@ -31,6 +31,7 @@ const Login = () => {
       });
       // Save token or any relevant data
       sessionStorage.setItem('authToken', response.data.access_token);
+      sessionStorage.setItem('userData',JSON.stringify(response.data))
       console.log(response);
       // Redirect to the home page
       navigate('/home');
