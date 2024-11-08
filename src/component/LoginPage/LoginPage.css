@@ -20,4 +20,5 @@
   
   .gradient-background {
     background-image: url('../../assest/login-background.jpg'), linear-gradient(344.87deg, #102191 -17%, #202026 57%);
+    margin-bottom: 29px;
   }
