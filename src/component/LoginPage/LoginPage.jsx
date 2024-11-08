@@ -1,19 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Button, TextField, Typography } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import LogoBackground from '../../assest/login-background.jpg';
 import LogoImage from '../../assest/logo-dark.png';
 import './LoginPage.css';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import apiService from '../../ApiService/service';
 
 const Login = () => {
   const [credentials, setCredentials] = useState({
-    email: '',
+    user: '',
     password: '',
   });
-
+  const [errors, setErrors] = useState({ user: '', password: '' });
   const navigate = useNavigate();
+
+  const validateEmail = (user) => {
+    const userRegex = /^[A-Za-z]+$/;
+    return userRegex.test(user);
+  };
+
+  const validatePassword = (password) => {
+    return password.length >= 4;
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -21,18 +29,40 @@ const Login = () => {
       ...credentials,
       [name]: value,
     });
+
+    // Clear error when the user starts typing
+    setErrors({
+      ...errors,
+      [name]: '',
+    });
   };
 
   const handleLogin = async () => {
+    // Validation checks
+    let valid = true;
+    const newErrors = { user: '', password: '' };
+
+    if (!validateEmail(credentials.user)) {
+      newErrors.user = 'please enter a valid user address.';
+      valid = false;
+    }
+
+    if (!validatePassword(credentials.password)) {
+      newErrors.password = 'please enter a valid password.';
+      valid = false;
+    }
+
+    setErrors(newErrors);
+
+    if (!valid) return;
+
+    // Proceed with login if validation passes
     try {
       const response = await apiService.post('auth/login', {
-        username: credentials.email,
+        username: credentials.user,
         password: credentials.password,
       });
-      // Save token or any relevant data
       sessionStorage.setItem('authToken', response.data.access_token);
-      console.log(response);
-      // Redirect to the home page
       navigate('/home');
     } catch (error) {
       console.error('Login failed:', error);
@@ -59,14 +89,16 @@ const Login = () => {
         <Box component="form" width="100%" maxWidth="400px">
           <TextField
             fullWidth
-            type="email"
-            name="email"
-            value={credentials.email}
+            type="user"
+            name="user"
+            value={credentials.user}
             onChange={handleInputChange}
             variant="outlined"
             label="Username"
             margin="normal"
             required
+            error={!!errors.user}
+            helperText={errors.user}
           />
           <TextField
             fullWidth
@@ -78,6 +110,8 @@ const Login = () => {
             value={credentials.password}
             onChange={handleInputChange}
             required
+            error={!!errors.password}
+            helperText={errors.password}
           />
           <Button
             fullWidth
