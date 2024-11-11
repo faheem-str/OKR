@@ -256,7 +256,7 @@ export default function Header() {
   <ul className="dropdown-menu w424" aria-labelledby="dropdownMenu2">
     <li className="dropdown-header drop-Name">Sort By</li>
     <div className='d-flex justify-content-between align-items-center'>
-  <div className='form-check'>
+  <div className='form-check m0'>
     <li className='dropdown-item d-flex align-items-center gap-1 p-2'>
       <input className="form-check-input custom-sizeCheckbox" type="radio" name="checkInGroup" id="checkIn1" />
       <label className="form-check-label" htmlFor="checkIn1">
@@ -270,7 +270,7 @@ export default function Header() {
       </label>
     </li>
   </div>
-  <div className='form-check'>
+  <div className='form-check m0'>
     <li className='dropdown-item d-flex align-items-center gap-1 p-2'>
       <input className="form-check-input custom-sizeCheckbox" type="radio" name="checkInGroup2" id="checkIn2" />
       <label className="form-check-label" htmlFor="checkIn2">

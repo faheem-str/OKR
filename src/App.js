@@ -12,7 +12,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/dashboard" element={<OKRHeader />} />
         {/* Redirect to login if no route matches */}
-        <Route path="*" element={<Navigate to="/dashboard" />} />
+        <Route path="*" element={<Navigate to="/login" />} />
         
       </Routes>
     </Router>
