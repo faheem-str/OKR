@@ -1,0 +1,21 @@
+.okr-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    background-color: #f9f9f9; 
+    padding: 10px 20px;
+    font-family: SpaceGrotesk-Medium, sans-serif ;
+  }
+  
+  .okr-item {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  
+  .okr-separator {
+    width: 1px;
+    height: 20px;
+    background-color: #ccc; 
+    margin: 0 15px;
+  }
+  
