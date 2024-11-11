@@ -64,7 +64,7 @@ const Login = () => {
       });
       sessionStorage.setItem('authToken', response.data.access_token);
       sessionStorage.setItem('userData',JSON.stringify(response.data))
-      navigate('/home');
+      navigate('/dashboard');
     } catch (error) {
       console.error('Login failed:', error);
     }
