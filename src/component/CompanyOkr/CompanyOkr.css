@@ -1,0 +1,19 @@
+.companyDiv{
+    background-color: #fff;
+    margin: 0px;
+    overflow-y: scroll;
+    height: 87vh;
+}
+/* Custom Scrollbar Styles */
+.companyDiv::-webkit-scrollbar {
+    width: 8px;
+}
+
+.companyDiv::-webkit-scrollbar-thumb {
+    background: #cecece;
+    border-radius: 10px;
+}
+
+.companyDiv::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
