@@ -23,3 +23,25 @@
     width: 16px;
     margin-right: 5px;
 }
+.dropdown-menu {
+    margin-top: 12px !important;
+    left: 50% !important;
+    transform: translateX(-50%);
+    border: none !important;
+    box-shadow: 0 8px 26px -4px rgba(20, 20, 20, 0.15), 0 8px 9px -5px rgba(20, 20, 20, 0.06) !important;
+  }
+  .dropdown .dropdown-menu.show:before {
+    top: -19px !important;
+}
+.dropdown .dropdown-menu:before {
+    font-family: "FontAwesome";
+    content: "\f0d8";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    right: auto;
+    font-size: 22px;
+    color: #fff;
+    transition: top 0.35s ease;
+    transform: translateX(-50%) !important;
+}
