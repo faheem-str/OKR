@@ -9,14 +9,45 @@ function OKRHeader() {
     return (
         <div>
             <Header />
+            <div className='inHeader'>
+                <div className='component'>
+                    <div className="okr-header">
+                        <div className="okr-item">
+                            <strong>Company OKRs</strong>
+                        </div>
+                        <div className='okr-separator'></div>
+                    </div>
+                    <div>
+                       <CompanyOKR/>
+                    </div>
+                </div>
+                <div className='component'>
+                    <div className="okr-header">
+                        <div className="okr-item">
+                            <strong>Team OKRs</strong>
+                        </div>
+                        <div className='okr-separator'></div>
 
-            <div className="okr-header">
-                <CompanyOKR />
-                <div className="okr-separator"></div>
-                <TeamOKR />
-                <div className="okr-separator"></div>
-                <SubTeamOKR />
+                    </div>
+                    <div>
+                       <TeamOKR/>
+                    </div>
+                </div>
+                <div className='component'>
+                    <div className="okr-header p11">
+                        <div className="okr-item">
+                            <strong>Sub-Team OKRs</strong>
+                        </div>
+                    </div>
+                    <div>
+                       <SubTeamOKR/>
+                    </div>
+                </div>
+
             </div>
+
+
+
         </div>
     );
 }

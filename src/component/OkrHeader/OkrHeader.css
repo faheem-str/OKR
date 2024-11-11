@@ -1,15 +1,18 @@
 .okr-header {
     display: flex;
     align-items: center;
-    justify-content: space-around;
-    background-color: #F6F6F4; 
+    justify-content: space-between;
+    background-color: #eeeeeb; 
     padding: 10px 20px;
+    width: 100%;
     font-family: SpaceGrotesk-Medium, sans-serif ;
+
   }
   
   .okr-item {
     font-size: 12px;
     white-space: nowrap;
+    text-align: left;
   }
   
   .okr-separator {
@@ -17,5 +20,21 @@
     height: 20px;
     background-color: #ccc; 
     margin: 0 15px;
+  }
+  .inHeader{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .component{
+    display: flex;
+    flex-direction: column;
+    width: 33.5%;
+    justify-content: flex-start;
+    align-items: flex-start;
+  
+  }
+  .p11{
+    padding: 11px 20px !important;
   }
   

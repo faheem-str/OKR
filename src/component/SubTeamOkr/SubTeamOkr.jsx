@@ -2,7 +2,7 @@ import React from 'react';
 
 function SubTeamOKR() {
   return (
-    <div className="okr-item">
+    <div>
       <strong>Sub-Team Okr</strong>
     </div>
   );
