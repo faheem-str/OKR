@@ -17,7 +17,7 @@ function OKRHeader() {
                         </div>
                         <div className='okr-separator'></div>
                     </div>
-                    <div>
+                    <div className='w-100'>
                        <CompanyOKR/>
                     </div>
                 </div>

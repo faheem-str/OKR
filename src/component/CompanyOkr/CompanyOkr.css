@@ -3,6 +3,7 @@
     margin: 0px;
     overflow-y: scroll;
     height: 87vh;
+    width: 100%;
 }
 /* Custom Scrollbar Styles */
 .companyDiv::-webkit-scrollbar {
