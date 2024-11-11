@@ -3,7 +3,7 @@
     align-items: center;
     justify-content: space-between;
     background-color: #eeeeeb; 
-    padding: 10px 20px;
+    padding: 10px 10px;
     width: 100%;
     font-family: SpaceGrotesk-Medium, sans-serif ;
 
@@ -19,22 +19,21 @@
     width: 1px;
     height: 20px;
     background-color: #ccc; 
-    margin: 0 15px;
   }
   .inHeader{
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
   }
   .component{
     display: flex;
     flex-direction: column;
-    width: 33.5%;
+    width: 100%;
     justify-content: flex-start;
     align-items: flex-start;
   
   }
   .p11{
-    padding: 11px 20px !important;
+    padding: 11px 10px !important;
   }
   
