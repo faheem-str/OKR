@@ -96,11 +96,11 @@ function CompanyOKR() {
 
     <div className='companyDiv'>
 {companyOKRList && companyOKRList.map((items,i)=>(
- <div key={i} className='w-100 d-inline-block'>
+ <div key={i} className='w-100 d-inline-block mb-1 mt-1'>
  <div class="accordion" id="accordionExample">
    <div class="accordion-item">
 
-     <div class="collapsed ObjectDiv d-flex" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+     <div class="collapsed ObjectDiv d-flex" type="button" data-bs-toggle="collapse" data-bs-target={`#accordionExample-${i}`} aria-expanded="false" aria-controls="collapseOne">
        <div className='ComObjpercent d-flex justify-content-center align-items-center'>
          <p>66%</p>
        </div>
@@ -141,7 +141,7 @@ function CompanyOKR() {
          </div>
        </div>
      </div>
-     <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+     <div id={`accordionExample-${i}`} className={`accordion-collapse collapse ${i === 0 && 'show'}`} aria-labelledby="headingOne" data-bs-parent="#accordionExample">
        <div class="accordion-body p0 m0 accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseIn" aria-expanded="false" aria-controls="collapseOne">
          <div className='ComKeypercentTracker position-relative'>
            {/* Progress bar fill */}

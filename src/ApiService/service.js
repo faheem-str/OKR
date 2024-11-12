@@ -1,6 +1,7 @@
 import axios from 'axios';
-
+import { history } from '../history';
 // Create an instance of axios
+
 const api = axios.create({
     baseURL: process.env.REACT_APP_BASE_URL,
   headers: {
@@ -19,7 +20,7 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    return Promise.reject(error);
+  return Promise.reject(error);
   }
 );
 
@@ -28,9 +29,17 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     // Handle errors, like unauthorized access or logging
+     // Handle errors, like unauthorized access or logging
+   if (error.response && error.response.status === 401) {
+    console.log('...........',error)
+    history.push('/login'); // Redirect to login page on 401 error
+    // Redirect to login page when 401 is received
+    // navigate()
+  }
     return Promise.reject(error);
   }
 );
+
 
 // Methods for API requests
 const apiService = {
