@@ -11,7 +11,7 @@ function CompanyOKR() {
   const [companyOKRList,setcompanyOKRList]=useState([])
 
   useEffect(() => {
-    objPercentFn();
+    // objPercentFn();
     KeyPercentFn();
     const userData = sessionStorage.getItem('userData');
     if (userData) {
@@ -25,13 +25,13 @@ function CompanyOKR() {
       getCompanyOKRList(parsedData.user_id);
     }
   }, [parsedData]);
-  const objPercentFn = () => {
-    if (percentage < 40) {
-      setBackgroundColor('rgb(255 166 166 / 50%)');
-    } else if (percentage < 70) {
-      setBackgroundColor('rgb(255 215 134 / 50%)');
+  const objPercentFn = (val) => {
+    if (val < 40) {
+      return 'rgb(255 166 166 / 50%)'
+    } else if (val < 70) {
+      return 'rgb(255 215 134 / 50%)'
     } else {
-      setBackgroundColor('#CBFFD7');
+      return '#CBFFD7';
     }
   }
   const KeyPercentFn = () => {
@@ -103,15 +103,15 @@ function CompanyOKR() {
    
         <div class="collapsed ObjectDiv d-flex" type="button" data-bs-toggle="collapse" data-bs-target={`#accordionExample-${i}`} aria-expanded="false" aria-controls="collapseOne">
           <div className='ComObjpercent d-flex justify-content-center align-items-center'>
-            <p>66%</p>
+            <p>{items.progress}%</p>
           </div>
           <div className='ComObjpercentTracker w-100 position-relative'>
             {/* Progress bar fill */}
             <div
               className='progress-fill'
               style={{
-                width: `${percentage}%`, // Dynamic width
-                backgroundColor: backgroundColor, // Dynamic color
+                width: `${items.progress}%`, // Dynamic width
+                backgroundColor: objPercentFn(items.progress), // Dynamic color
                 height: '100%',
                 position: 'absolute',
                 top: 0,
@@ -126,7 +126,7 @@ function CompanyOKR() {
               className='content-wrapper d-flex justify-content-between align-items-center w-100'
               style={{ position: 'relative', zIndex: 2 }}
             >
-              <p className='ComObjName'>US Business</p>
+              <p className='ComObjName'>{items.objective_name}</p>
               <div className='ComObjIndicato d-flex justify-content-center align-items-center gap-3'>
                 <div
                   className='ComTeamName d-flex justify-content-center align-items-center'
@@ -135,7 +135,9 @@ function CompanyOKR() {
                   <p>UB</p>
                 </div>
                 <div className='objtype-tag d-flex justify-content-center align-items-center'>
-                  <p>A</p>
+                  
+                  <p>{items.obj_period_type === 'A - Aspirational' ? 'A' : items.obj_period_type === 'L - Learning' ? 'L' : items.obj_period_type === 'C - Committed' ? 'C' : null    }</p>
+                  
                 </div>
                 <div className='mark-as'></div>
               </div>
