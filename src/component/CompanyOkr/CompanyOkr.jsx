@@ -1,85 +1,265 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import './CompanyOkr.css'
 function CompanyOKR() {
+  const[backgroundColor,setBackgroundColor]=useState('')
+  const[keyBackgroundColor,setKeyBackgroundColor]=useState('')
+
+ const [percentage,setPercentage]=useState(90)
+ const [keypercentage,setKeypPercentage]=useState(50)
+
+
+  // Determine background color based on percentage
+  useEffect(() => {
+    objPercentFn();
+    KeyPercentFn()
+  }, [])
+  const objPercentFn=()=>{
+    if (percentage < 40) {
+      setBackgroundColor('rgb(255 166 166 / 50%)'); // Red for less than 50%
+    } else if (percentage < 70) {
+      setBackgroundColor('rgb(255 215 134 / 50%)'); // Yellow for 50-74%
+    } else {
+      setBackgroundColor('#CBFFD7'); // Green for 75% and above
+    }
+  }
+  const KeyPercentFn=()=>{
+    if (keypercentage < 40) {
+      setKeyBackgroundColor('rgb(255 166 166 / 50%)'); // Red for less than 50%
+    } else if (keypercentage < 70) {
+      setKeyBackgroundColor('rgb(255 215 134 / 50%)'); // Yellow for 50-74%
+    } else {
+      setKeyBackgroundColor('#CBFFD7'); // Green for 75% and above
+    }
+  }
+  // venkatcode
+  const [showInput, setShowInput] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [comments, setComments] = useState([]);
+  const [viewMore, setViewMore] = useState(false);
+  // const [viewLess, setViewLess] = useState(false)
+
+  const handleAddCommentClick = () => {
+    setShowInput(true);
+  };
+
+  const handleViewMoreClick = () => {
+    setViewMore(!viewMore);
+    // setViewLess(!viewLess)
+    if (!viewMore) {
+      setShowInput(false)
+    } 
+  };
+
+  const handleCommentSubmit = () => {
+    if (commentText.trim()) {
+      setComments([
+        ...comments,
+        {
+          text: commentText,
+          modifiedOn: new Date().toLocaleString(),
+          commentedBy: 'Your Name Here', // Replace with dynamic data if available
+        },
+      ]);
+      setCommentText('');
+      setShowInput(false);
+    }
+  };
+
+  
+  
   return (
     <div className='companyDiv'>
+      
      <div class="accordion" id="accordionExample">
   <div class="accordion-item">
-    <h2 class="accordion-header" id="headingOne">
-      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-        Accordion Item #1
-      </button>
-    </h2>
+
+    <div  class="collapsed ObjectDiv d-flex" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+      <div className='ComObjpercent d-flex justify-content-center align-items-center'>
+        <p>66%</p>
+      </div>
+      <div className='ComObjpercentTracker w-100 position-relative'>
+              {/* Progress bar fill */}
+              <div
+                className='progress-fill'
+                style={{
+                  width: `${percentage}%`, // Dynamic width
+                  backgroundColor: backgroundColor, // Dynamic color
+                  height: '100%',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  borderRadius: '0px 6px 6px 0px',
+                  zIndex: 1,
+                }}
+              ></div>
+
+              {/* Content inside the progress bar */}
+              <div
+                className='content-wrapper d-flex justify-content-between align-items-center w-100'
+                style={{ position: 'relative', zIndex: 2 }}
+              >
+                <p className='ComObjName'>US Business</p>
+                <div className='ComObjIndicato d-flex justify-content-center align-items-center gap-3'>
+                  <div
+                    className='ComTeamName d-flex justify-content-center align-items-center'
+                    title='Tooltip on top'
+                  >
+                    <p>UB</p>
+                  </div>
+                  <div className='objtype-tag d-flex justify-content-center align-items-center'>
+                    <p>A</p>
+                  </div>
+                  <div className='mark-as'></div>
+                </div>
+              </div>
+            </div>
+    </div>
     <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
-      <div class="accordion-body">
-        <strong>This is the first item's accordion body.</strong> It is shown by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
+      <div class="accordion-body p0 m0 accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseIn" aria-expanded="false" aria-controls="collapseOne">
+      <div className='ComKeypercentTracker position-relative'>
+              {/* Progress bar fill */}
+              <div
+                className='progress-fill'
+                style={{
+                  width: `${keypercentage}%`, // Dynamic width
+                  backgroundColor: keyBackgroundColor, // Dynamic color
+                  height: '100%',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  borderRadius: '0px 6px 6px 0px',
+                  zIndex: 1,
+                }}
+              ></div>
+
+              {/* Content inside the progress bar */}
+              <div
+                className='content-wrapper d-flex justify-content-between align-items-center w-100'
+                style={{ position: 'relative', zIndex: 2 }}
+              >
+                <p className='ComObjName'>US Business</p>
+                <div className='ComObjIndicato d-flex justify-content-center align-items-center gap-3'>
+                  <div
+                    className='ComTeamName d-flex justify-content-center align-items-center'
+                    title='Tooltip on top'
+                  >
+                    <p>UB</p>
+                  </div>
+                  <div className='objtype-tag d-flex justify-content-center align-items-center'>
+                    <p>A</p>
+                  </div>
+                  <div className='mark-as'></div>
+                </div>
+              </div>
+            </div>
       </div>
-      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseIn" aria-expanded="false" aria-controls="collapseOne">
-        second buttonS
-      </button>
-      <div id='collapseIn' class="accordion-collapse collapse show">
-          sub tree
-      </div>
+      <div id='collapseIn' class="accordion-collapse collapse disIn text-start kr-dtl-title">
+      <p>US Business update</p>
+
+<div className='readmore-content'>US Business update</div>
+<div className="p-3">
+  {/* Progress Bar */}
+  <div className="d-flex align-items-center mb-3">
+    <div className="progress flex-grow-1" style={{ height: '6px', marginRight: '10px' }}>
+      <div
+        className="progress-bar bg-success"
+        role="progressbar"
+        style={{ width: '66%' }}
+        aria-valuenow="66"
+        aria-valuemin="0"
+        aria-valuemax="100"
+      ></div>
     </div>
+    <div className="font-weight-bold" style={{ minWidth: '25px' }}>66%</div>
   </div>
-  <div class="accordion-item">
-    <h2 class="accordion-header" id="headingTwo">
-      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-        Accordion Item #2
-      </button>
-    </h2>
-    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
-      <div class="accordion-body">
-        <strong>This is the second item's accordion body.</strong> It is hidden by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
-      </div>
+
+
+  {/* Timeline Content */}
+  <div className="comments-section">
+  <div className="p-3 border rounded bg-light">
+    <p className="mb-1">
+      <strong>Update:</strong> Moved from 0 to 26%
+    </p>
+    <p className="mb-1">
+      <strong>Modified on:</strong> 1st Oct, 2024, 3:58 PM
+    </p>
+    <p className="mb-0">
+      <strong>Comments:</strong> checkin
+    </p>
+    <div className="mt-2">
+      <a className="text-primary" onClick={handleAddCommentClick} href='/'>Add Comment</a>
     </div>
-  </div>
-  <div class="accordion-item">
-    <h2 class="accordion-header" id="headingThree">
-      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-        Accordion Item #3
-      </button>
-    </h2>
-    <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
-      <div class="accordion-body">
-        <strong>This is the third item's accordion body.</strong> It is hidden by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
+    {showInput && (
+      <div className="mt-2">
+        <textarea
+          className="form-control"
+          rows="3"
+          placeholder="Add comments"
+          value={commentText}
+          onChange={(e) => setCommentText(e.target.value)}
+        ></textarea>
+        <button
+          className="button-kr mt-2"
+          onClick={handleCommentSubmit}
+          disabled={!commentText.trim()}
+        >
+          Submit
+        </button>
       </div>
-    </div>
-  </div>
-  <div class="accordion-item">
-    <h2 class="accordion-header" id="headingThree">
-      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-        Accordion Item #3
-      </button>
-    </h2>
-    <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
-      <div class="accordion-body">
-        <strong>This is the third item's accordion body.</strong> It is hidden by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
+    )}
+
+
+    {viewMore && (
+      <div className="mt-3">
+        {comments.map((comment, index) => (
+          <div
+            key={index}
+            className="p-3 mt-3 rounded"
+            style={{ backgroundColor: '#3366ff', color: '#fff' }}
+          >
+            <p className="mb-1">
+              <strong>Comments:</strong> {comment.text}
+            </p>
+            <p className="mb-1">
+              <strong>Modified on:</strong> {comment.modifiedOn}
+            </p>
+            <p className="mb-0">
+              <strong>Commented By:</strong> {comment.commentedBy}
+            </p>
+          </div>
+        ))}
       </div>
-    </div>
-  </div>
-  <div class="accordion-item">
-    <h2 class="accordion-header" id="headingThree">
-      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-        Accordion Item #3
-      </button>
-    </h2>
-    <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
-      <div class="accordion-body">
-        <strong>This is the third item's accordion body.</strong> It is hidden by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
+    )}
+    {/* Display Comments */}
+    {comments.map((comment, index) => (
+      <div
+        key={index}
+        className="p-3 mt-3 rounded"
+        style={{ backgroundColor: '#3366ff', color: '#fff' }}
+      >
+        <p className="mb-1">
+          <strong>Comments:</strong> {comment.text}
+        </p>
+        <p className="mb-1">
+          <strong>Modified on:</strong> {comment.modifiedOn}
+        </p>
+        <p className="mb-0">
+          <strong>Commented By:</strong> {comment.commentedBy}
+        </p>
       </div>
-    </div>
+    ))}
   </div>
-  <div class="accordion-item">
-    <h2 class="accordion-header" id="headingThree">
-      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-        Accordion Item #3
-      </button>
-    </h2>
-    <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
-      <div class="accordion-body">
-        <strong>This is the third item's accordion body.</strong> It is hidden by default, until the collapse plugin adds the appropriate classes that we use to style each element. These classes control the overall appearance, as well as the showing and hiding via CSS transitions. You can modify any of this with custom CSS or overriding our default variables. It's also worth noting that just about any HTML can go within the <code>.accordion-body</code>, though the transition does limit overflow.
+  </div>
+
+  <div className="mt-2">
+    <a href="/" className="text-primary" onClick={handleViewMoreClick}>
+      {viewMore ? 'View Less' : 'View More'}
+    </a>
+  </div>
+
+</div>
       </div>
+
     </div>
   </div>
 </div>
