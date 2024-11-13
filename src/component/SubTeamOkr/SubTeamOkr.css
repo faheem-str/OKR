@@ -1,0 +1,26 @@
+
+p{
+    padding: 0;
+    margin: 0;
+  }
+.subTeamDiv{
+    background-color: #fff;
+    margin: 0px;
+    overflow-y: scroll;
+    height: 87vh;
+    width: 100%;
+    padding: 10px 20px 20px 20px;
+}
+/* Custom Scrollbar Styles */
+.subTeamDiv::-webkit-scrollbar {
+    width: 8px;
+}
+
+.subTeamDiv::-webkit-scrollbar-thumb {
+    background: #cecece;
+    border-radius: 10px;
+}
+
+.subTeamDiv::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}

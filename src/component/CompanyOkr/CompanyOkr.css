@@ -168,4 +168,14 @@ p{
     color: #fff;
     align-self: flex-end;
     }
-    
+    .btnDiv{
+      margin-top: 20px;
+    }
+    .btnDiv button{
+      padding: 4px 30px;
+      border: 2px dashed #00000030;
+      background: none;
+      border-radius: 5px;
+      font-size: 12px;
+      color: #282828;
+    }

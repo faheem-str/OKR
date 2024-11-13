@@ -29,7 +29,7 @@ function OKRHeader() {
                         <div className='okr-separator'></div>
 
                     </div>
-                    <div>
+                    <div className='w-100'>
                        <TeamOKR/>
                     </div>
                 </div>
@@ -39,7 +39,7 @@ function OKRHeader() {
                             <strong>Sub-Team OKRs</strong>
                         </div>
                     </div>
-                    <div>
+                    <div className='w-100'>
                        <SubTeamOKR/>
                     </div>
                 </div>
