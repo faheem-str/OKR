@@ -179,3 +179,32 @@ p{
       font-size: 12px;
       color: #282828;
     }
+    .createFormLabel{
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        margin-bottom: 0.5rem !important;
+        color: #344767 !important;
+        margin-left: 0.25rem !important;
+    }
+    .form-control {
+      border: 1px solid #D2D6DA !important;
+      border-radius: 5px !important;
+      padding: 5px 10px !important;
+      background: none !important;
+      font-size: 0.7rem !important;
+  }
+    
+  .form-select{
+    border: 1px solid #D2D6DA !important;
+      border-radius: 5px !important;
+      padding: 5px 10px !important;
+      font-size: 0.7rem !important;
+  }
+  .subBtn{
+    padding: 5px 50px;
+    border: 1px solid #00000030;
+    background: none;
+    border-radius: 5px;
+    font-size: 12px;
+    color: #282828;
+  }

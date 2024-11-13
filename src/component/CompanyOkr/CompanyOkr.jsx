@@ -9,7 +9,7 @@ function CompanyOKR() {
   const [keypercentage, setKeypPercentage] = useState(50);
   const [parsedData, setParsedData] = useState({});
   const [companyOKRList, setcompanyOKRList] = useState([]);
-
+  const [isObj,setIsobj]=useState(false)
   useEffect(() => {
     KeyPercentFn();
     const userData = sessionStorage.getItem("userData");
@@ -22,6 +22,15 @@ function CompanyOKR() {
     if (parsedData && parsedData.user_id) {
       console.log(parsedData.user_id);
       getCompanyOKRList(parsedData.user_id);
+    }
+    if (parsedData && parsedData.user_id) {
+      setFormData(prevData => ({
+        ...prevData,
+        user_id: parsedData.user_id,
+        assigned_to_id: parsedData.user_id,
+        who_map_id: parsedData.user_id,
+        whom_map_id: parsedData.user_id,
+      }));
     }
   }, [parsedData]);
   const objPercentFn = (val) => {
@@ -91,6 +100,86 @@ function CompanyOKR() {
       [index]: !prevMarkedRows[index],
     }));
   };
+
+  // create from
+  const [formData, setFormData] = useState(
+    {
+      "objective_name": "",
+      "objective_details": "",
+      "obj_period_type": "",
+      "objective_type": "",
+      "user_id": parsedData.user_id ? parsedData.user_id : '',
+      "assigned_to_id": parsedData.user_id ? parsedData.user_id : '',
+      "year": 2024,
+      "period": "Annual",
+      "type": "Objective",
+      "username": "",
+      "progress": 0,
+      "team": "Company OKR",
+      "key_results": [],
+      "who_map_id": parsedData.user_id ? parsedData.user_id : '',
+      "whom_map_id": parsedData.user_id ? parsedData.user_id : '',
+      "progress_type": "",
+      "progress_description": "",
+      "start_value": "",
+      "parent_id": null,
+      "end_value": "",
+      "milestone_data": "",
+      "assessment_freq": ""
+  }
+);
+
+  const [errors, setErrors] = useState({});
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+  
+    if (name === 'obj_period_type') {
+      console.log(value);
+      setFormData(prevFormData => ({
+        ...prevFormData,
+        objective_type: value === 'L - Learning' ? '1' :
+                        value === 'C - Committed' ? '2' :
+                        value === 'A - Aspirational' ? '3' : ''
+      }));
+    } 
+      setFormData(prevFormData => ({
+        ...prevFormData,
+        [name]: value
+      }));
+    
+  };
+
+  const handleSubmit = async(e) => {
+    e.preventDefault();
+    let validationErrors = {};
+    if (!formData.objective_name) {
+      validationErrors.objective_name = 'Please fill the input';
+    }
+    if (!formData.obj_period_type) {
+      validationErrors.obj_period_type = 'Please select an option';
+    }
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length === 0) {
+      try {
+        const response = await apiService.post(
+          `objectives/objectives?user_id=${parsedData.user_id}`,[formData]
+        );
+        if(response){
+          setIsobj(false)
+      getCompanyOKRList(parsedData.user_id);
+          
+        }
+      } catch (error) {
+        console.error("failed:", error);
+      }
+      console.log('Form submitted successfully', formData);
+    }
+  };
+  const openFrom =()=>{
+    setIsobj(prev => !prev)
+  }
 
   return (
     <div className="companyDiv">
@@ -372,9 +461,92 @@ function CompanyOKR() {
             )
         )}
      <div className="btnDiv d-flex justify-content-between align-items-center w-100">
-      <button>Create Objective</button>
+      <button onClick={openFrom}>Create Objective</button>
       <button>Create Key Result</button>
      </div>
+      {/* create form */}
+      {
+    isObj && 
+    <div className=' mt-4'>
+    <form  className='p-2 border rounded'>
+      <div className='mb-3 text-start'>
+        <label htmlFor='objective' className='form-label fw-bold createFormLabel'>
+          Objective
+        </label>
+        <input
+          type='text'
+          id='objective_name'
+          name='objective_name'
+          className='form-control'
+          placeholder='Please Provide Your Objective'
+          value={formData.objective_name}
+          onChange={handleChange}
+        />
+        {errors.objective_name && (
+          <div className='text-danger mt-1'>{errors.objective_name}</div>
+        )}
+      </div>
+
+      <div className='mb-3 text-start'>
+        <label htmlFor='description' className='form-label fw-bold createFormLabel'>
+          Description
+        </label>
+        <textarea
+          id='description'
+          name='objective_details'
+          className='form-control'
+          placeholder='Objective description'
+          value={formData.objective_details}
+          onChange={handleChange}
+        ></textarea>
+      </div>
+
+      <div className='mb-3 text-start'>
+        <label htmlFor='objectiveType' className='form-label fw-bold createFormLabel'>
+          Objective Type
+        </label>
+        <select
+          id='obj_period_type'
+          name='obj_period_type'
+          className='form-select'
+          value={formData.obj_period_type}
+          onChange={handleChange}
+        >
+          <option value='L - Learning'>L - Learning</option>
+          <option value='C - Committed'>C - Committed</option>
+          <option value='A - Aspirational'>A - Aspirational</option>
+        </select>
+        {errors.obj_period_type && (
+          <div className='text-danger mt-1'>{errors.obj_period_type}</div>
+        )}
+      </div>
+
+      <div className='mb-3 text-start'>
+        <label htmlFor='period' className='form-label fw-bold createFormLabel'>
+          Period
+        </label>
+        <select
+          id='period'
+          name='period'
+          className='form-select'
+          value={formData.period}
+        >
+          <option value='Annual' disabled>Annual</option>
+        </select>
+      </div>
+
+      <div className='d-flex justify-content-between gap-3'>
+        <button onClick={openFrom} type='button' className='subBtn'>
+          Cancel
+        </button>
+        <button type='submit' className='subBtn' onClick={handleSubmit}>
+          Submit
+        </button>
+      </div>
+    </form>
+  </div>
+      }
+     
     </div>
   );
 }
