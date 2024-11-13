@@ -9,6 +9,7 @@ function CompanyOKR() {
   const [keypercentage, setKeypPercentage] = useState(50)
   const [parsedData, setParsedData] = useState({})
   const [companyOKRList,setcompanyOKRList]=useState([])
+  const [isMark,setisMark]=useState(false)
 
   useEffect(() => {
     // objPercentFn();
@@ -89,8 +90,18 @@ function CompanyOKR() {
       console.error('Login failed:', error);
     }
   }
-
-
+ 
+  const maskAS = ()=>{
+    setisMark(!isMark)
+  }
+  const [markedRows, setMarkedRows] = useState({}); // Use an object to store the marked status for each row
+  const handleMarkAsClick = (index) => {
+    // Toggle the marked status for the clicked row
+    setMarkedRows((prevMarkedRows) => ({
+      ...prevMarkedRows,
+      [index]: !prevMarkedRows[index],
+    }));
+  };
 
   return (
 
@@ -130,16 +141,19 @@ function CompanyOKR() {
               <div className='ComObjIndicato d-flex justify-content-center align-items-center gap-3'>
                 <div
                   className='ComTeamName d-flex justify-content-center align-items-center'
-                  title='Tooltip on top'
+                  title='Company OKR'
                 >
-                  <p>UB</p>
+                  <p>CO</p>
                 </div>
-                <div className='objtype-tag d-flex justify-content-center align-items-center'>
+                <div className='objtype-tag d-flex justify-content-center align-items-center'  title={ items.obj_period_type}>
                   
                   <p>{items.obj_period_type === 'A - Aspirational' ? 'A' : items.obj_period_type === 'L - Learning' ? 'L' : items.obj_period_type === 'C - Committed' ? 'C' : null    }</p>
                   
                 </div>
-                <div className='mark-as'></div>
+                <div className='mark-as' onClick={() => handleMarkAsClick(i)}
+                        style={{
+                          backgroundColor: markedRows[i] ? 'red' : '#d9d9d9',
+                        }}></div>
               </div>
             </div>
           </div>
@@ -174,7 +188,7 @@ function CompanyOKR() {
            className='ComTeamName d-flex justify-content-center align-items-center'
            title='Tooltip on top'
          >
-           <p>UB</p>
+           <p>CO</p>
          </div>
          <div className='objtype-tag d-flex justify-content-center align-items-center'>
            <p>A</p>
