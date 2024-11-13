@@ -10,6 +10,12 @@ function CompanyOKR() {
   const [parsedData, setParsedData] = useState({});
   const [companyOKRList, setcompanyOKRList] = useState([]);
   const [isObj,setIsobj]=useState(false)
+  const [isKey,setIsKey]=useState(false)
+  const [isKeybtn,setIsKeybtn]=useState(true)
+  const [isObjbtn,setIsObjbtn]=useState(false)
+
+
+
   useEffect(() => {
     KeyPercentFn();
     const userData = sessionStorage.getItem("userData");
@@ -25,6 +31,15 @@ function CompanyOKR() {
     }
     if (parsedData && parsedData.user_id) {
       setFormData(prevData => ({
+        ...prevData,
+        user_id: parsedData.user_id,
+        assigned_to_id: parsedData.user_id,
+        who_map_id: parsedData.user_id,
+        whom_map_id: parsedData.user_id,
+      }));
+    }
+    if (parsedData && parsedData.user_id) {
+      setKeyFormData(prevData => ({
         ...prevData,
         user_id: parsedData.user_id,
         assigned_to_id: parsedData.user_id,
@@ -106,7 +121,7 @@ function CompanyOKR() {
     {
       "objective_name": "",
       "objective_details": "",
-      "obj_period_type": "",
+      "obj_period_type": "L - Learning",
       "objective_type": "",
       "user_id": parsedData.user_id ? parsedData.user_id : '',
       "assigned_to_id": parsedData.user_id ? parsedData.user_id : '',
@@ -180,16 +195,103 @@ function CompanyOKR() {
   const openFrom =()=>{
     setIsobj(prev => !prev)
   }
+  const keyFrom = ()=>{
+    setIsKey(prev => !prev)
+  }
 
+  // key form
+  const [keyformData, setKeyFormData] = useState(
+    {
+      "objective_name": "",
+      "objective_details": "",
+      "obj_period_type": "L - Learning",
+      "objective_type": "",
+      "user_id": parsedData.user_id ? parsedData.user_id : '',
+      "assigned_to_id": parsedData.user_id ? parsedData.user_id : '',
+      "year": 2024,
+      "period": "Annual",
+      "type": "Key",
+      "username": "",
+      "progress": 0,
+      "team": "Company OKR",
+      "key_results": [],
+      "who_map_id": parsedData.user_id ? parsedData.user_id : '',
+      "whom_map_id": parsedData.user_id ? parsedData.user_id : '',
+      "progress_type": "",
+      "progress_description": "",
+      "start_value": "",
+      "parent_id": 0,
+      "end_value": "",
+      "milestone_data": "",
+      "assessment_freq": ""
+  }
+  
+);
+const getParentObj = (val)=>{
+  setKeyFormData(prevFormData => ({
+    ...prevFormData,
+    parent_id: val
+  }));
+  setIsKeybtn(false)
+  setIsObjbtn(true)
+
+    }
+    const [keyerrors, setKeyErrors] = useState({});
+
+    const keyhandleChange = (e) => {
+      const { name, value } = e.target;
+    
+      if (name === 'obj_period_type') {
+        console.log(value);
+        setKeyFormData(prevFormData => ({
+          ...prevFormData,
+          objective_type: value === 'L - Learning' ? '1' :
+                          value === 'C - Committed' ? '2' :
+                          value === 'A - Aspirational' ? '3' : ''
+        }));
+      } 
+        setKeyFormData(prevFormData => ({
+          ...prevFormData,
+          [name]: value
+        }));
+      
+    };
+    const keyhandleSubmit = async(e) => {
+      e.preventDefault();
+      let validationErrors = {};
+      if (!keyformData.objective_name) {
+        validationErrors.objective_name = 'Please fill the input';
+      }
+      if (!keyformData.obj_period_type) {
+        validationErrors.obj_period_type = 'Please select an option';
+      }
+      setKeyErrors(validationErrors);
+  
+      if (Object.keys(validationErrors).length === 0) {
+        try {
+          const response = await apiService.post(
+            `objectives/objectives?user_id=${parsedData.user_id}`,[keyformData]
+          );
+          if(response){
+            setIsKey(false)
+        getCompanyOKRList(parsedData.user_id);
+            
+          }
+        } catch (error) {
+          console.error("failed:", error);
+        }
+        console.log('Form submitted successfully', formData);
+      }
+    };
   return (
     <div className="companyDiv">
        {companyOKRList &&
         companyOKRList.map(
           (items, i) =>
             items.type === "Objective" && (
-              <div key={i} className="w-100 d-inline-block mb-1 mt-1">
+              <div key={i} className="w-100 d-inline-block mb-1 mt-1" onClick={()=>getParentObj(items.id)}>
                 <div class="accordion" id="accordionExample">
-                  <div class="accordion-item">
+                  <div class="accordion-item" >
                     <div
                       class="collapsed ObjectDiv d-flex"
                       type="button"
@@ -461,8 +563,8 @@ function CompanyOKR() {
             )
         )}
      <div className="btnDiv d-flex justify-content-between align-items-center w-100">
-      <button onClick={openFrom}>Create Objective</button>
-      <button>Create Key Result</button>
+      <button disabled={isObjbtn} style={{opacity: isObjbtn && 0.6,}} onClick={openFrom}>Create Objective</button>
+      <button onClick={keyFrom} disabled={isKeybtn}  style={{opacity: isKeybtn && 0.6,}}>Create Key Result</button>
      </div>
       {/* create form */}
       {
@@ -546,6 +648,90 @@ function CompanyOKR() {
     </form>
   </div>
       }
+      {
+    isKey && 
+    <div className=' mt-4'>
+    <form  className='p-2 border rounded'>
+      <div className='mb-3 text-start'>
+        <label htmlFor='objective' className='form-label fw-bold createFormLabel'>
+          Key Result
+        </label>
+        <input
+          type='text'
+          id='objective_name'
+          name='objective_name'
+          className='form-control'
+          placeholder='Please Provide Your Key Result'
+          value={keyformData.objective_name}
+          onChange={keyhandleChange}
+        />
+        {keyerrors.objective_name && (
+          <div className='text-danger mt-1'>{keyerrors.objective_name}</div>
+        )}
+      </div>
+
+      <div className='mb-3 text-start'>
+        <label htmlFor='description' className='form-label fw-bold createFormLabel'>
+          Description
+        </label>
+        <textarea
+          id='description'
+          name='objective_details'
+          className='form-control'
+          placeholder='Key description'
+          value={keyformData.objective_details}
+          onChange={keyhandleChange}
+        ></textarea>
+      </div>
+
+      <div className='mb-3 text-start'>
+        <label htmlFor='objectiveType' className='form-label fw-bold createFormLabel'>
+          KR Type
+        </label>
+        <select
+          id='obj_period_type'
+          name='obj_period_type'
+          className='form-select'
+          value={keyformData.obj_period_type}
+          onChange={keyhandleChange}
+        >
+          <option value='L - Learning'>L - Learning</option>
+          <option value='C - Committed'>C - Committed</option>
+          <option value='A - Aspirational'>A - Aspirational</option>
+        </select>
+        {keyerrors.obj_period_type && (
+          <div className='text-danger mt-1'>{keyerrors.obj_period_type}</div>
+        )}
+      </div>
+
+      <div className='mb-3 text-start'>
+        <label htmlFor='period' className='form-label fw-bold createFormLabel'>
+          Period
+        </label>
+        <select
+          id='period'
+          name='period'
+          className='form-select'
+          value={keyformData.period}
+        >
+          <option value='Annual' disabled>Annual</option>
+        </select>
+      </div>
+
+      <div className='d-flex justify-content-between gap-3'>
+        <button onClick={keyFrom} type='button' className='subBtn'>
+          Cancel
+        </button>
+        <button type='submit' className='subBtn' onClick={keyhandleSubmit}>
+          Submit
+        </button>
+      </div>
+    </form>
+  </div>
+      }
+      
+
+
      
     </div>
   );
