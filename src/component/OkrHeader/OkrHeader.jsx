@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState}from 'react';
 import './OkrHeader.css';
 import CompanyOKR from '../CompanyOkr/CompanyOkr';
 import TeamOKR from '../TeamOkr/TeamOkr';
@@ -6,9 +6,15 @@ import SubTeamOKR from '../SubTeamOkr/SubTeamOkr';
 import Header from '../Header/Header'
 
 function OKRHeader() {
+    const [dropdownValue, setDropdownValue] = useState(''); // State to hold the dropdown value
+
+    // Callback function to update the state
+    const handleDropdownChange = (value) => {
+        setDropdownValue(value);
+    };
     return (
         <div>
-            <Header />
+            <Header onDropdownChange={handleDropdownChange} />
             <div className='inHeader'>
                 <div className='component'>
                     <div className="okr-header">
@@ -18,7 +24,7 @@ function OKRHeader() {
                         <div className='okr-separator'></div>
                     </div>
                     <div className='w-100'>
-                       <CompanyOKR/>
+                       <CompanyOKR dropdownValue={dropdownValue}/>
                     </div>
                 </div>
                 <div className='component'>

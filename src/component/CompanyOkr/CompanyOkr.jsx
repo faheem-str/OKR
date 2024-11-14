@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./CompanyOkr.css";
 import apiService from "../../ApiService/service";
-function CompanyOKR() {
+function CompanyOKR({dropdownValue}) {
   const [backgroundColor, setBackgroundColor] = useState("");
   const [keyBackgroundColor, setKeyBackgroundColor] = useState("");
 
@@ -23,6 +23,10 @@ function CompanyOKR() {
       setParsedData(JSON.parse(userData));
     }
   }, []);
+  useEffect(() => {
+   console.log(dropdownValue)
+  }, [dropdownValue])
+  
 
   useEffect(() => {
     if (parsedData && parsedData.user_id) {
@@ -283,6 +287,36 @@ const getParentObj = (val)=>{
         console.log('Form submitted successfully', formData);
       }
     };
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+    
+      // Extract date components
+      const day = date.getDate();
+      const month = date.toLocaleString('default', { month: 'short' });
+      const year = date.getFullYear();
+      const hours = date.getHours();
+      const minutes = date.getMinutes();
+    
+      // Format day with suffix
+      const daySuffix = (day) => {
+        if (day > 3 && day < 21) return 'th'; // for 4th-20th
+        switch (day % 10) {
+          case 1: return 'st';
+          case 2: return 'nd';
+          case 3: return 'rd';
+          default: return 'th';
+        }
+      };
+    
+      // Convert 24-hour time to 12-hour format
+      const formattedHours = hours % 12 || 12;
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+    
+      // Pad minutes with leading zero if needed
+      const formattedMinutes = minutes.toString().padStart(2, '0');
+    
+      return `${day}${daySuffix(day)} ${month}, ${year}, ${formattedHours}:${formattedMinutes} ${ampm}`;
+    }
   return (
     <div className="companyDiv">
        {companyOKRList &&
@@ -326,13 +360,18 @@ const getParentObj = (val)=>{
                         >
                           <p className="ComObjName">{items.objective_name}</p>
                           <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
-                            <div
+                            {
+                              dropdownValue !== 'Detailed' && 
+                              <div
                               className="ComTeamName d-flex justify-content-center align-items-center"
                               title="Company OKR"
                             >
                               <p>CO</p>
                             </div>
-                            <div
+                            }
+                             {
+                              dropdownValue !== 'Detailed' && 
+                              <div
                               className="objtype-tag d-flex justify-content-center align-items-center"
                               title={items.obj_period_type}
                             >
@@ -346,6 +385,9 @@ const getParentObj = (val)=>{
                                   : null}
                               </p>
                             </div>
+                              }
+                           
+                          
                             <div
                               className="mark-as"
                               onClick={() => handleMarkAsClick(i)}
@@ -359,13 +401,47 @@ const getParentObj = (val)=>{
                         </div>
                       </div>
                     </div>
+                    {dropdownValue === 'Detailed' && 
+                      <div className="w-100 detailDiv">
+                      <div className="w-100 d-flex justify-content-between align-items-center">
+                           <p className="detailTitle">{items.objective_name}</p>
+                           <div>
+                           <i class="fa fa-pencil detailIcon" aria-hidden="true"></i>
+                           <i class="fa fa-trash detailIcon" aria-hidden="true"></i>
+                           </div>
+                      </div>
+                      <div className="w-100 d-flex justify-content-between align-items-center mt-3">
+                           <p className="detailTitle">{formatDate(items.created_at)} <i class="fas fa-clock"></i></p>
+                           <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
+                                   <div
+                                     className="ComTeamName d-flex justify-content-center align-items-center"
+                                     title="Tooltip on top"
+                                   >
+                                     <p>CO</p>
+                                   </div>
+                                   <div className="objtype-tag d-flex justify-content-center align-items-center">
+                                     <p>
+                                     {items.obj_period_type === "A - Aspirational"
+                                   ? "A"
+                                   : items.obj_period_type === "L - Learning"
+                                   ? "L"
+                                   : items.obj_period_type === "C - Committed"
+                                   ? "C"
+                                   : null}
+                                     </p>
+                                   </div>
+                                 </div>
+                      </div>
+                     </div>
+                    }
+                  
                     {items.key_results &&
                       items.key_results.map((subItem, subIndex) => (
                         <div
                           id={`accordionExample-${i}`}
                           className={`accordion-collapse collapse ${
                             i === 0 && "show"
-                          }`}
+                          } ${dropdownValue ==='Detailed' && "show"}`}
                           aria-labelledby="headingOne"
                           data-bs-parent="#accordionExample"
                         >
@@ -420,8 +496,45 @@ const getParentObj = (val)=>{
                                   <div className="mark-as"></div>
                                 </div>
                               </div>
+                              
                             </div>
+                           
                           </div>
+                          {dropdownValue === 'Detailed' && 
+                             <div className="keyDetailDiv">
+                             <div className="w-100 d-flex justify-content-between align-items-center">
+                              <p className="detailTitle">{subItem.objective_name}</p>
+                              <div>
+                              <i class="fa fa-pencil detailIcon" aria-hidden="true"></i>
+                              <i class="fa fa-trash detailIcon" aria-hidden="true"></i>
+                              </div>
+                         </div>
+                         <div className="w-100 d-flex justify-content-between align-items-center mt-3">
+                              <p className="detailTitle">{formatDate(subItem.created_at)} <i class="fas fa-clock"></i></p>
+                              <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
+                                      <div
+                                        className="ComTeamName d-flex justify-content-center align-items-center"
+                                        title="Tooltip on top"
+                                      >
+                                        <p>CO</p>
+                                      </div>
+                                      <div className="objtype-tag d-flex justify-content-center align-items-center">
+                                        <p>
+                                        {subItem.obj_period_type === "A - Aspirational"
+                                      ? "A"
+                                      : subItem.obj_period_type === "L - Learning"
+                                      ? "L"
+                                      : subItem.obj_period_type === "C - Committed"
+                                      ? "C"
+                                      : null}
+                                        </p>
+                                      </div>
+                                    </div>
+                         </div>
+                               </div>
+                          }
+
+                       
                           <div
                             id={`collapseIn${subIndex}`}
                             class="accordion-collapse collapse disIn text-start kr-dtl-title"
