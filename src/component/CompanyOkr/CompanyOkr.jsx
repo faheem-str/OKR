@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./CompanyOkr.css";
 import apiService from "../../ApiService/service";
-function CompanyOKR({dropdownValue}) {
+function CompanyOKR() {
   const [backgroundColor, setBackgroundColor] = useState("");
   const [keyBackgroundColor, setKeyBackgroundColor] = useState("");
 
@@ -9,14 +9,13 @@ function CompanyOKR({dropdownValue}) {
   const [keypercentage, setKeypPercentage] = useState(50);
   const [parsedData, setParsedData] = useState({});
   const [companyOKRList, setcompanyOKRList] = useState([]);
-  const [isObj,setIsobj]=useState(false)
-  const [isKey,setIsKey]=useState(false)
-  const [isKeybtn,setIsKeybtn]=useState(true)
-  const [isObjbtn,setIsObjbtn]=useState(false)
+  const [isObj, setIsobj] = useState(false);
+  const [isKey, setIsKey] = useState(false);
+  const [isKeybtn, setIsKeybtn] = useState(true);
+  const [isObjbtn, setIsObjbtn] = useState(false);
   const [logs] = useState([]);
   const [activeCommentIndex, setActiveCommentIndex] = useState(null);
-
-
+  const [keyParent, setKeyParent] = useState([])
 
   useEffect(() => {
     KeyPercentFn();
@@ -25,14 +24,10 @@ function CompanyOKR({dropdownValue}) {
       setParsedData(JSON.parse(userData));
     }
   }, []);
-  useEffect(() => {
-   console.log(dropdownValue)
-  }, [dropdownValue])
-  
 
   useEffect(() => {
     if (parsedData && parsedData.user_id) {
-      console.log(parsedData.user_id);
+      console.log('parsedData', parsedData.user_id);
       getCompanyOKRList(parsedData.user_id);
     }
     if (parsedData && parsedData.user_id) {
@@ -45,7 +40,7 @@ function CompanyOKR({dropdownValue}) {
       }));
     }
     if (parsedData && parsedData.user_id) {
-      setKeyFormData(prevData => ({
+      setKeyFormData((prevData) => ({
         ...prevData,
         user_id: parsedData.user_id,
         assigned_to_id: parsedData.user_id,
@@ -79,8 +74,8 @@ function CompanyOKR({dropdownValue}) {
 
   const handleAddCommentClick = (index) => {
     // setShowInput(true);
-    // setActiveCommentIndex((prevIndex) => (prevIndex === index ? null : index));
-    setActiveCommentIndex(activeCommentIndex === index ? null : index);
+    // setActiveCommentIndex(activeCommentIndex === index ? null : index);
+    setActiveCommentIndex(index); 
   };
 
   const handleViewMoreClick = () => {
@@ -114,6 +109,7 @@ function CompanyOKR({dropdownValue}) {
     setCommentText("");
     setActiveCommentIndex(null); //
   };
+
   const getCompanyOKRList = async (id) => {
     try {
       const response = await apiService.get(
@@ -121,10 +117,21 @@ function CompanyOKR({dropdownValue}) {
       );
       console.log(response);
       setcompanyOKRList(response.data);
+
     } catch (error) {
       console.error("Login failed:", error);
     }
   };
+
+  const objectiveWithKeyResult = async (id, team) => {
+    try {
+      const response = await apiService.get(`objectives/objectives_with_key_results_parent?user_id=${id.user_id}&parent_id=${id.id}&tName=${parsedData.department}`)
+      console.log(response)
+      setKeyParent(response.data)
+    } catch(error){
+    console.log(error)
+    }
+  }
 
   const [markedRows, setMarkedRows] = useState({});
   const handleMarkAsClick = (index) => {
@@ -135,32 +142,30 @@ function CompanyOKR({dropdownValue}) {
   };
 
   // create from
-  const [formData, setFormData] = useState(
-    {
-      "objective_name": "",
-      "objective_details": "",
-      "obj_period_type": "L - Learning",
-      "objective_type": "",
-      "user_id": parsedData.user_id ? parsedData.user_id : '',
-      "assigned_to_id": parsedData.user_id ? parsedData.user_id : '',
-      "year": 2024,
-      "period": "Annual",
-      "type": "Objective",
-      "username": "",
-      "progress": 0,
-      "team": "Company OKR",
-      "key_results": [],
-      "who_map_id": parsedData.user_id ? parsedData.user_id : '',
-      "whom_map_id": parsedData.user_id ? parsedData.user_id : '',
-      "progress_type": "",
-      "progress_description": "",
-      "start_value": "",
-      "parent_id": null,
-      "end_value": "",
-      "milestone_data": "",
-      "assessment_freq": ""
-  }
-);
+  const [formData, setFormData] = useState({
+    objective_name: "",
+    objective_details: "",
+    obj_period_type: "L - Learning",
+    objective_type: "",
+    user_id: parsedData.user_id ? parsedData.user_id : "",
+    assigned_to_id: parsedData.user_id ? parsedData.user_id : "",
+    year: 2024,
+    period: "Annual",
+    type: "Objective",
+    username: "",
+    progress: 0,
+    team: "Company OKR",
+    key_results: [],
+    who_map_id: parsedData.user_id ? parsedData.user_id : "",
+    whom_map_id: parsedData.user_id ? parsedData.user_id : "",
+    progress_type: "",
+    progress_description: "",
+    start_value: "",
+    parent_id: null,
+    end_value: "",
+    milestone_data: "",
+    assessment_freq: "",
+  });
 
   const [errors, setErrors] = useState({});
 
@@ -214,137 +219,112 @@ function CompanyOKR({dropdownValue}) {
       console.log("Form submitted successfully", formData);
     }
   };
-  const openFrom =()=>{
-    setIsobj(prev => !prev)
-  }
-  const keyFrom = ()=>{
-    setIsKey(prev => !prev)
-  }
+  const openFrom = () => {
+    setIsobj((prev) => !prev);
+  };
+  const keyFrom = () => {
+    setIsKey((prev) => !prev);
+  };
 
   // key form
-  const [keyformData, setKeyFormData] = useState(
-    {
-      "objective_name": "",
-      "objective_details": "",
-      "obj_period_type": "L - Learning",
-      "objective_type": "",
-      "user_id": parsedData.user_id ? parsedData.user_id : '',
-      "assigned_to_id": parsedData.user_id ? parsedData.user_id : '',
-      "year": 2024,
-      "period": "Annual",
-      "type": "Key",
-      "username": "",
-      "progress": 0,
-      "team": "Company OKR",
-      "key_results": [],
-      "who_map_id": parsedData.user_id ? parsedData.user_id : '',
-      "whom_map_id": parsedData.user_id ? parsedData.user_id : '',
-      "progress_type": "",
-      "progress_description": "",
-      "start_value": "",
-      "parent_id": 0,
-      "end_value": "",
-      "milestone_data": "",
-      "assessment_freq": ""
-  }
-  
-);
-const getParentObj = (val)=>{
-  setKeyFormData(prevFormData => ({
-    ...prevFormData,
-    parent_id: val
-  }));
-  setIsKeybtn(false)
-  setIsObjbtn(true)
+  const [keyformData, setKeyFormData] = useState({
+    objective_name: "",
+    objective_details: "",
+    obj_period_type: "L - Learning",
+    objective_type: "",
+    user_id: parsedData.user_id ? parsedData.user_id : "",
+    assigned_to_id: parsedData.user_id ? parsedData.user_id : "",
+    year: 2024,
+    period: "Annual",
+    type: "Key",
+    username: "",
+    progress: 0,
+    team: "Company OKR",
+    key_results: [],
+    who_map_id: parsedData.user_id ? parsedData.user_id : "",
+    whom_map_id: parsedData.user_id ? parsedData.user_id : "",
+    progress_type: "",
+    progress_description: "",
+    start_value: "",
+    parent_id: 0,
+    end_value: "",
+    milestone_data: "",
+    assessment_freq: "",
+  });
+  const getParentObj = (val) => {
+    setKeyFormData((prevFormData) => ({
+      ...prevFormData,
+      parent_id: val,
+    }));
+    setIsKeybtn(false);
+    setIsObjbtn(true);
+  };
+  const [keyerrors, setKeyErrors] = useState({});
 
-    }
-    const [keyerrors, setKeyErrors] = useState({});
+  const keyhandleChange = (e) => {
+    const { name, value } = e.target;
 
-    const keyhandleChange = (e) => {
-      const { name, value } = e.target;
-    
-      if (name === 'obj_period_type') {
-        console.log(value);
-        setKeyFormData(prevFormData => ({
-          ...prevFormData,
-          objective_type: value === 'L - Learning' ? '1' :
-                          value === 'C - Committed' ? '2' :
-                          value === 'A - Aspirational' ? '3' : ''
-        }));
-      } 
-        setKeyFormData(prevFormData => ({
-          ...prevFormData,
-          [name]: value
-        }));
-      
-    };
-    const keyhandleSubmit = async(e) => {
-      e.preventDefault();
-      let validationErrors = {};
-      if (!keyformData.objective_name) {
-        validationErrors.objective_name = 'Please fill the input';
-      }
-      if (!keyformData.obj_period_type) {
-        validationErrors.obj_period_type = 'Please select an option';
-      }
-      setKeyErrors(validationErrors);
-  
-      if (Object.keys(validationErrors).length === 0) {
-        try {
-          const response = await apiService.post(
-            `objectives/objectives?user_id=${parsedData.user_id}`,[keyformData]
-          );
-          if(response){
-            setIsKey(false)
-        getCompanyOKRList(parsedData.user_id);
-            
-          }
-        } catch (error) {
-          console.error("failed:", error);
-        }
-        console.log('Form submitted successfully', formData);
-      }
-    };
-    function formatDate(dateString) {
-      const date = new Date(dateString);
-    
-      // Extract date components
-      const day = date.getDate();
-      const month = date.toLocaleString('default', { month: 'short' });
-      const year = date.getFullYear();
-      const hours = date.getHours();
-      const minutes = date.getMinutes();
-    
-      // Format day with suffix
-      const daySuffix = (day) => {
-        if (day > 3 && day < 21) return 'th'; // for 4th-20th
-        switch (day % 10) {
-          case 1: return 'st';
-          case 2: return 'nd';
-          case 3: return 'rd';
-          default: return 'th';
-        }
-      };
-    
-      // Convert 24-hour time to 12-hour format
-      const formattedHours = hours % 12 || 12;
-      const ampm = hours >= 12 ? 'PM' : 'AM';
-    
-      // Pad minutes with leading zero if needed
-      const formattedMinutes = minutes.toString().padStart(2, '0');
-    
-      return `${day}${daySuffix(day)} ${month}, ${year}, ${formattedHours}:${formattedMinutes} ${ampm}`;
+    if (name === "obj_period_type") {
+      console.log(value);
+      setKeyFormData((prevFormData) => ({
+        ...prevFormData,
+        objective_type:
+          value === "L - Learning"
+            ? "1"
+            : value === "C - Committed"
+            ? "2"
+            : value === "A - Aspirational"
+            ? "3"
+            : "",
+      }));
     }
+    setKeyFormData((prevFormData) => ({
+      ...prevFormData,
+      [name]: value,
+    }));
+  };
+  const keyhandleSubmit = async (e) => {
+    e.preventDefault();
+    let validationErrors = {};
+    if (!keyformData.objective_name) {
+      validationErrors.objective_name = "Please fill the input";
+    }
+    if (!keyformData.obj_period_type) {
+      validationErrors.obj_period_type = "Please select an option";
+    }
+    setKeyErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length === 0) {
+      try {
+        const response = await apiService.post(
+          `objectives/objectives?user_id=${parsedData.user_id}`,
+          [keyformData]
+        );
+        if (response) {
+          setIsKey(false);
+          getCompanyOKRList(parsedData.user_id);
+        }
+      } catch (error) {
+        console.error("failed:", error);
+      }
+      console.log("Form submitted successfully", formData);
+    }
+  };
   return (
     <div className="companyDiv">
       {companyOKRList &&
         companyOKRList.map(
           (items, i) =>
             items.type === "Objective" && (
-              <div key={i} className="w-100 d-inline-block mb-1 mt-1" onClick={()=>getParentObj(items.id)}>
+              <div
+                key={i}
+                className="w-100 d-inline-block mb-1 mt-1"
+                onClick={() => getParentObj(items.id)}
+              >
                 <div class="accordion" id="accordionExample">
                   <div class="accordion-item" tabindex={i}>
-                    <div tabindex={i}
+                    <div
+                      tabindex={i}
                       class="collapsed ObjectDiv d-flex"
                       type="button"
                       data-bs-toggle="collapse"
@@ -378,18 +358,13 @@ const getParentObj = (val)=>{
                         >
                           <p className="ComObjName">{items.objective_name}</p>
                           <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
-                            {
-                              dropdownValue !== 'Detailed' && 
-                              <div
+                            <div
                               className="ComTeamName d-flex justify-content-center align-items-center"
                               title="Company OKR"
                             >
                               <p>CO</p>
                             </div>
-                            }
-                             {
-                              dropdownValue !== 'Detailed' && 
-                              <div
+                            <div
                               className="objtype-tag d-flex justify-content-center align-items-center"
                               title={items.obj_period_type}
                             >
@@ -403,9 +378,6 @@ const getParentObj = (val)=>{
                                   : null}
                               </p>
                             </div>
-                              }
-                           
-                          
                             <div
                               className="mark-as"
                               onClick={() => handleMarkAsClick(i)}
@@ -419,47 +391,13 @@ const getParentObj = (val)=>{
                         </div>
                       </div>
                     </div>
-                    {dropdownValue === 'Detailed' && 
-                      <div className="w-100 detailDiv">
-                      <div className="w-100 d-flex justify-content-between align-items-center">
-                           <p className="detailTitle">{items.objective_name}</p>
-                           <div>
-                           <i class="fa fa-pencil detailIcon" aria-hidden="true"></i>
-                           <i class="fa fa-trash detailIcon" aria-hidden="true"></i>
-                           </div>
-                      </div>
-                      <div className="w-100 d-flex justify-content-between align-items-center mt-3">
-                           <p className="detailTitle">{formatDate(items.created_at)} <i class="fas fa-clock"></i></p>
-                           <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
-                                   <div
-                                     className="ComTeamName d-flex justify-content-center align-items-center"
-                                     title="Tooltip on top"
-                                   >
-                                     <p>CO</p>
-                                   </div>
-                                   <div className="objtype-tag d-flex justify-content-center align-items-center">
-                                     <p>
-                                     {items.obj_period_type === "A - Aspirational"
-                                   ? "A"
-                                   : items.obj_period_type === "L - Learning"
-                                   ? "L"
-                                   : items.obj_period_type === "C - Committed"
-                                   ? "C"
-                                   : null}
-                                     </p>
-                                   </div>
-                                 </div>
-                      </div>
-                     </div>
-                    }
-                  
                     {items.key_results &&
                       items.key_results.map((subItem, subIndex) => (
                         <div
                           id={`accordionExample-${i}`}
                           className={`accordion-collapse collapse ${
                             i === 0 && "show"
-                          } ${dropdownValue ==='Detailed' && "show"}`}
+                          }`}
                           aria-labelledby="headingOne"
                           data-bs-parent="#accordionExample"
                         >
@@ -470,6 +408,7 @@ const getParentObj = (val)=>{
                             data-bs-target={`#collapseIn${subIndex}`}
                             aria-expanded="false"
                             aria-controls="collapseOne"
+                            onClick={()=>objectiveWithKeyResult(subItem)}
                           >
                             <div className="kr ComKeypercentTracker position-relative">
                               {/* Progress bar fill */}
@@ -477,7 +416,9 @@ const getParentObj = (val)=>{
                                 className="progress-fill"
                                 style={{
                                   width: `${subItem.progress}%`, // Dynamic width
-                                  backgroundColor: objPercentFn(subItem.progress), // Dynamic color
+                                  backgroundColor: objPercentFn(
+                                    subItem.progress
+                                  ), // Dynamic color
                                   height: "100%",
                                   position: "absolute",
                                   top: 0,
@@ -492,7 +433,10 @@ const getParentObj = (val)=>{
                                 className="content-wrapper d-flex justify-content-between align-items-center w-100"
                                 style={{ position: "relative", zIndex: 2 }}
                               >
-                                <p className="ComObjName m25">{subItem.progress+ "% "}{subItem.objective_name}</p>
+                                <p className="ComObjName m25">
+                                  {subItem.progress + "% "}
+                                  {subItem.objective_name}
+                                </p>
                                 <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
                                   <div
                                     className="ComTeamName d-flex justify-content-center align-items-center"
@@ -502,70 +446,33 @@ const getParentObj = (val)=>{
                                   </div>
                                   <div className="objtype-tag d-flex justify-content-center align-items-center">
                                     <p>
-                                    {subItem.obj_period_type === "A - Aspirational"
-                                  ? "A"
-                                  : subItem.obj_period_type === "L - Learning"
-                                  ? "L"
-                                  : subItem.obj_period_type === "C - Committed"
-                                  ? "C"
-                                  : null}
+                                      {subItem.obj_period_type ===
+                                      "A - Aspirational"
+                                        ? "A"
+                                        : subItem.obj_period_type ===
+                                          "L - Learning"
+                                        ? "L"
+                                        : subItem.obj_period_type ===
+                                          "C - Committed"
+                                        ? "C"
+                                        : null}
                                     </p>
                                   </div>
                                   <div className="mark-as"></div>
                                 </div>
                               </div>
-                              
                             </div>
-                           
                           </div>
-                          {dropdownValue === 'Detailed' && 
-                             <div className="keyDetailDiv">
-                             <div className="w-100 d-flex justify-content-between align-items-center">
-                              <p className="detailTitle">{subItem.objective_name}</p>
-                              <div>
-                              <i class="fa fa-pencil detailIcon" aria-hidden="true"></i>
-                              <i class="fa fa-trash detailIcon" aria-hidden="true"></i>
-                              </div>
-                         </div>
-                         <div className="w-100 d-flex justify-content-between align-items-center mt-3">
-                              <p className="detailTitle">{formatDate(subItem.created_at)} <i class="fas fa-clock"></i></p>
-                              <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
-                                      <div
-                                        className="ComTeamName d-flex justify-content-center align-items-center"
-                                        title="Tooltip on top"
-                                      >
-                                        <p>CO</p>
-                                      </div>
-                                      <div className="objtype-tag d-flex justify-content-center align-items-center">
-                                        <p>
-                                        {subItem.obj_period_type === "A - Aspirational"
-                                      ? "A"
-                                      : subItem.obj_period_type === "L - Learning"
-                                      ? "L"
-                                      : subItem.obj_period_type === "C - Committed"
-                                      ? "C"
-                                      : null}
-                                        </p>
-                                      </div>
-                                    </div>
-                         </div>
-                               </div>
-                          }
-
-                       
                           <div
                             id={`collapseIn${subIndex}`}
-                            className="accordion-collapse collapse text-start kr-dtl-title"
+                            class="accordion-collapse collapse disIn text-start kr-dtl-title"
                           >
-                            <p className="font-weight-bold">
-                              {items.objective_name}
-                            </p>
+                            <p>{items.objective_name}</p>
 
-                            <div className="readmore-content text-muted mb-3">
+                            <div className="readmore-content">
                               {items.objective_details}
                             </div>
-
-                            <div className="p-3 bg-white border rounded shadow-sm">
+                            <div className="p-3">
                               {/* Progress Bar */}
                               <div className="d-flex align-items-center mb-3">
                                 <div
@@ -576,122 +483,111 @@ const getParentObj = (val)=>{
                                     className="progress-bar bg-success"
                                     role="progressbar"
                                     style={{ width: `${items.progress}%` }}
-                                    aria-valuenow={items.progress}
+                                    aria-valuenow="66"
                                     aria-valuemin="0"
                                     aria-valuemax="100"
                                   ></div>
                                 </div>
                                 <div
-                                  className="font-weight-bold text-dark"
-                                  style={{ minWidth: "35px" }}
+                                  className="font-weight-bold"
+                                  style={{ minWidth: "25px" }}
                                 >
                                   {items.progress}%
                                 </div>
                               </div>
 
-                              {/* Comments Section */}
+                              {/* Timeline Content */}
                               {viewMore && (
-  <div className="expanded-content">
-  {subItem.logs.map((log, index) => (
-    <div
-      key={index}
-      className="p-3 border rounded bg-light mb-3 log-entry"
-    >
-      <p className="mb-1">
-        <strong>Update:</strong>{" "}
-        {`Moved from ${
-          log.old_progress || 0
-        }% to ${log.progress}%`}
-      </p>
-      <p className="mb-1">
-        <strong>Modified on:</strong>{" "}
-        {new Date(
-          log.action_timestamp
-        ).toLocaleString()}
-      </p>
-      <p className="mb-0">
-        <strong>Comments:</strong>{" "}
-        {log.notes_checkin || "No comments"}
-      </p>
-
-      {/* Add Comment Link */}
-      <div className="mt-2">
-        <a
-          className="text-primary"
-          onClick={() =>
-            handleAddCommentClick(index)
-          }
-          style={{
-            cursor: "pointer",
-            textDecoration: "underline",
-          }}
-        >
-          Add Comment
-        </a>
-      </div>
-
-      {/* Comment Input Box */}
-      {activeCommentIndex === index && (
-        <div className="mt-3">
-          <textarea
-            className="form-control"
-            rows="3"
-            placeholder="Add comments"
-            value={commentText}
-            onChange={(e) =>
-              setCommentText(e.target.value)
-            }
-          ></textarea>
-          <button
-            className="btn btn-primary mt-2"
-            onClick={() =>
-              handleCommentSubmit({ subItem })
-            }
-            disabled={!commentText.trim()}
-          >
-            Submit
-          </button>
-        </div>
-      )}
-
-      {/* Display Comments */}
-      {comments[index] &&
-        comments[index].map(
-          (comment, commentIndex) => (
-            <div
-              key={commentIndex}
-              className="mt-3"
-            >
-              <div
-                className="p-3 rounded"
-                style={{
-                  backgroundColor: "#3366ff",
-                  color: "#fff",
-                }}
-              >
-                <p className="mb-1">
-                  <strong>Comments:</strong>{" "}
-                  {comment.text}
-                </p>
-                <p className="mb-1">
-                  <strong>Modified on:</strong>{" "}
-                  {comment.modifiedOn}
-                </p>
-                <p className="mb-0">
-                  <strong>Commented By:</strong>{" "}
-                  {comment.commentedBy}
-                </p>
-              </div>
-            </div>
-          
-        ))}
-    </div>
-  ))}
-</div>
+                                <div className="comments-section">
+                                  {subItem.logs.map((log, index) => (
+                                    <div
+                                      key={index}
+                                      className="p-3 border rounded bg-light mb-3"
+                                    >
+                                      <p className="mb-1">
+                                        <strong>Update:</strong>{" "}
+                                        {`Moved from ${
+                                          log.old_progress || 0
+                                        }% to ${log.progress}%`}
+                                      </p>
+                                      <p className="mb-1">
+                                        <strong>Modified on:</strong>{" "}
+                                        {new Date(
+                                          log.action_timestamp
+                                        ).toLocaleString()}
+                                      </p>
+                                      <p className="mb-0">
+                                        <strong>Comments:</strong>{" "}
+                                        {log.notes_checkin || "No comments"}
+                                      </p>
+                                      <div className="mt-2">
+                                        <a
+                                          className="text-primary"
+                                          onClick={() =>
+                                            handleAddCommentClick(index)
+                                          }
+                                          style={{
+                                            cursor: "pointer",
+                                            textDecoration: "underline",
+                                          }}
+                                        >
+                                          Add Comment
+                                        </a>
+                                      </div>
+                                      {activeCommentIndex === index && (
+                                        <div className="mt-2">
+                                          <textarea
+                                            className="form-control"
+                                            rows="3"
+                                            placeholder="Add comments"
+                                            value={commentText}
+                                            onChange={(e) =>
+                                              setCommentText(e.target.value)
+                                            }
+                                          ></textarea>
+                                          <button
+                                            className="button-kr mt-2"
+                                            onClick={() =>
+                                              handleCommentSubmit({ subItem })
+                                            }
+                                            disabled={!commentText.trim()}
+                                          >
+                                            Submit
+                                          </button>
+                                        </div>
+                                      )}
+                                      {/* Display Comments */}
+                                      {comments[index] &&
+                                        comments[index].map(
+                                          (comment, commentIndex) => (
+                                            <div
+                                              key={commentIndex}
+                                              className="p-3 mt-3 rounded"
+                                              style={{
+                                                backgroundColor: "#3366ff",
+                                                color: "#fff",
+                                              }}
+                                            >
+                                              <p className="mb-1">
+                                                <strong>Comments:</strong>{" "}
+                                                {comment.text}
+                                              </p>
+                                              <p className="mb-1">
+                                                <strong>Modified on:</strong>{" "}
+                                                {comment.modifiedOn}
+                                              </p>
+                                              <p className="mb-0">
+                                                <strong>Commented By:</strong>{" "}
+                                                {comment.commentedBy}
+                                              </p>
+                                            </div>
+                                          )
+                                        )}
+                                    </div>
+                                  ))}
+                                </div>
                               )}
-                            
 
-                              {/* View More / View Less */}
                               <div className="mt-2">
                                 <a
                                   className="text-primary"
@@ -713,10 +609,22 @@ const getParentObj = (val)=>{
               </div>
             )
         )}
-     <div className="btnDiv d-flex justify-content-between align-items-center w-100">
-      <button disabled={isObjbtn} style={{opacity: isObjbtn && 0.6,}} onClick={openFrom}>Create Objective</button>
-      <button onClick={keyFrom} disabled={isKeybtn}  style={{opacity: isKeybtn && 0.6,}}>Create Key Result</button>
-     </div>
+      <div className="btnDiv d-flex justify-content-between align-items-center w-100">
+        <button
+          disabled={isObjbtn}
+          style={{ opacity: isObjbtn && 0.6 }}
+          onClick={openFrom}
+        >
+          Create Objective
+        </button>
+        <button
+          onClick={keyFrom}
+          disabled={isKeybtn}
+          style={{ opacity: isKeybtn && 0.6 }}
+        >
+          Create Key Result
+        </button>
+      </div>
       {/* create form */}
       {isObj && (
         <div className=" mt-4">
@@ -801,98 +709,119 @@ const getParentObj = (val)=>{
               </select>
             </div>
 
-      <div className='d-flex justify-content-between gap-3'>
-        <button onClick={openFrom} type='button' className='subBtn'>
-          Cancel
-        </button>
-        <button type='submit' className='subBtn' onClick={handleSubmit}>
-          Submit
-        </button>
-      </div>
-    </form>
-  </div>
+            <div className="d-flex justify-content-between gap-3">
+              <button onClick={openFrom} type="button" className="subBtn">
+                Cancel
+              </button>
+              <button type="submit" className="subBtn" onClick={handleSubmit}>
+                Submit
+              </button>
+            </div>
+          </form>
+        </div>
       )}
-      {
-    isKey && 
-    <div className=' mt-4'>
-    <form  className='p-2 border rounded'>
-      <div className='mb-3 text-start'>
-        <label htmlFor='objective' className='form-label fw-bold createFormLabel'>
-          Key Result
-        </label>
-        <input
-          type='text'
-          id='objective_name'
-          name='objective_name'
-          className='form-control'
-          placeholder='Please Provide Your Key Result'
-          value={keyformData.objective_name}
-          onChange={keyhandleChange}
-        />
-        {keyerrors.objective_name && (
-          <div className='text-danger mt-1'>{keyerrors.objective_name}</div>
-        )}
-      </div>
+      {isKey && (
+        <div className=" mt-4">
+          <form className="p-2 border rounded">
+            <div className="mb-3 text-start">
+              <label
+                htmlFor="objective"
+                className="form-label fw-bold createFormLabel"
+              >
+                Key Result
+              </label>
+              <input
+                type="text"
+                id="objective_name"
+                name="objective_name"
+                className="form-control"
+                placeholder="Please Provide Your Key Result"
+                value={keyformData.objective_name}
+                onChange={keyhandleChange}
+              />
+              {keyerrors.objective_name && (
+                <div className="text-danger mt-1">
+                  {keyerrors.objective_name}
+                </div>
+              )}
+            </div>
 
-      <div className='mb-3 text-start'>
-        <label htmlFor='description' className='form-label fw-bold createFormLabel'>
-          Description
-        </label>
-        <textarea
-          id='description'
-          name='objective_details'
-          className='form-control'
-          placeholder='Key description'
-          value={keyformData.objective_details}
-          onChange={keyhandleChange}
-        ></textarea>
-      </div>
+            <div className="mb-3 text-start">
+              <label
+                htmlFor="description"
+                className="form-label fw-bold createFormLabel"
+              >
+                Description
+              </label>
+              <textarea
+                id="description"
+                name="objective_details"
+                className="form-control"
+                placeholder="Key description"
+                value={keyformData.objective_details}
+                onChange={keyhandleChange}
+              ></textarea>
+            </div>
 
-      <div className='mb-3 text-start'>
-        <label htmlFor='objectiveType' className='form-label fw-bold createFormLabel'>
-          KR Type
-        </label>
-        <select
-          id='obj_period_type'
-          name='obj_period_type'
-          className='form-select'
-          value={keyformData.obj_period_type}
-          onChange={keyhandleChange}
-        >
-          <option value='L - Learning'>L - Learning</option>
-          <option value='C - Committed'>C - Committed</option>
-          <option value='A - Aspirational'>A - Aspirational</option>
-        </select>
-        {keyerrors.obj_period_type && (
-          <div className='text-danger mt-1'>{keyerrors.obj_period_type}</div>
-        )}
-      </div>
+            <div className="mb-3 text-start">
+              <label
+                htmlFor="objectiveType"
+                className="form-label fw-bold createFormLabel"
+              >
+                KR Type
+              </label>
+              <select
+                id="obj_period_type"
+                name="obj_period_type"
+                className="form-select"
+                value={keyformData.obj_period_type}
+                onChange={keyhandleChange}
+              >
+                <option value="L - Learning">L - Learning</option>
+                <option value="C - Committed">C - Committed</option>
+                <option value="A - Aspirational">A - Aspirational</option>
+              </select>
+              {keyerrors.obj_period_type && (
+                <div className="text-danger mt-1">
+                  {keyerrors.obj_period_type}
+                </div>
+              )}
+            </div>
 
-      <div className='mb-3 text-start'>
-        <label htmlFor='period' className='form-label fw-bold createFormLabel'>
-          Period
-        </label>
-        <select
-          id='period'
-          name='period'
-          className='form-select'
-          value={keyformData.period}
-        >
-          <option value='Annual' disabled>Annual</option>
-        </select>
-      </div>
+            <div className="mb-3 text-start">
+              <label
+                htmlFor="period"
+                className="form-label fw-bold createFormLabel"
+              >
+                Period
+              </label>
+              <select
+                id="period"
+                name="period"
+                className="form-select"
+                value={keyformData.period}
+              >
+                <option value="Annual" disabled>
+                  Annual
+                </option>
+              </select>
+            </div>
 
-      <div className='d-flex justify-content-between gap-3'>
-        <button onClick={keyFrom} type='button' className='subBtn'>
-          Cancel
-        </button>
-        <button type='submit' className='subBtn' onClick={keyhandleSubmit}>
-          Submit
-        </button>
-      </div>
-    </form>
-  </div>
-      }
+            <div className="d-flex justify-content-between gap-3">
+              <button onClick={keyFrom} type="button" className="subBtn">
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="subBtn"
+                onClick={keyhandleSubmit}
+              >
+                Submit
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
