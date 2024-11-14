@@ -31,10 +31,9 @@ api.interceptors.response.use(
     // Handle errors, like unauthorized access or logging
      // Handle errors, like unauthorized access or logging
    if (error.response && error.response.status === 401) {
-    console.log('...........',error)
-    history.push('/login'); // Redirect to login page on 401 error
-    // Redirect to login page when 401 is received
-    // navigate()
+    // history.push('/login'); 
+    window.location.href = '/login';
+    
   }
     return Promise.reject(error);
   }
