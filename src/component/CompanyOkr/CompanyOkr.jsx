@@ -13,6 +13,8 @@ function CompanyOKR({dropdownValue}) {
   const [isKey,setIsKey]=useState(false)
   const [isKeybtn,setIsKeybtn]=useState(true)
   const [isObjbtn,setIsObjbtn]=useState(false)
+  const [logs] = useState([]);
+  const [activeCommentIndex, setActiveCommentIndex] = useState(null);
 
 
 
@@ -34,7 +36,7 @@ function CompanyOKR({dropdownValue}) {
       getCompanyOKRList(parsedData.user_id);
     }
     if (parsedData && parsedData.user_id) {
-      setFormData(prevData => ({
+      setFormData((prevData) => ({
         ...prevData,
         user_id: parsedData.user_id,
         assigned_to_id: parsedData.user_id,
@@ -75,30 +77,42 @@ function CompanyOKR({dropdownValue}) {
   const [comments, setComments] = useState([]);
   const [viewMore, setViewMore] = useState(false);
 
-  const handleAddCommentClick = () => {
-    setShowInput(true);
+  const handleAddCommentClick = (index) => {
+    // setShowInput(true);
+    // setActiveCommentIndex((prevIndex) => (prevIndex === index ? null : index));
+    setActiveCommentIndex(activeCommentIndex === index ? null : index);
   };
 
   const handleViewMoreClick = () => {
-    setViewMore(!viewMore);
-    if (!viewMore) {
-      setShowInput(false);
-    }
+    setViewMore((prev) => !prev);
+    // setViewMore(!viewMore);
+    // if (!viewMore) {
+    //   setShowInput(false);
+    // }
   };
 
-  const handleCommentSubmit = () => {
-    if (commentText.trim()) {
-      setComments([
-        ...comments,
-        {
-          text: commentText,
-          modifiedOn: new Date().toLocaleString(),
-          commentedBy: "Your Name Here",
-        },
-      ]);
-      setCommentText("");
-      setShowInput(false);
+  const handleCommentSubmit = ({ subItem }) => {
+    if (activeCommentIndex === null || !subItem || !subItem.logs) return;
+    const newComments = [...comments];
+    if (!newComments[activeCommentIndex]) {
+      newComments[activeCommentIndex] = [];
     }
+    const log = subItem.logs[activeCommentIndex];
+    const displayName = log?.display_name || "Unknown User";
+
+    newComments[activeCommentIndex].push({
+      text: commentText,
+      modifiedOn: new Date().toLocaleString(),
+      commentedBy: displayName,
+    });
+    setComments(newComments);
+    // setComments([...comments, newComments]);
+    // setComments((prev) => ({
+    //   ...prev,
+    //   [activeCommentIndex]: [...(prev[activeCommentIndex] || []), newComments],
+    // }));
+    setCommentText("");
+    setActiveCommentIndex(null); //
   };
   const getCompanyOKRList = async (id) => {
     try {
@@ -152,48 +166,52 @@ function CompanyOKR({dropdownValue}) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-  
-    if (name === 'obj_period_type') {
+
+    if (name === "obj_period_type") {
       console.log(value);
-      setFormData(prevFormData => ({
+      setFormData((prevFormData) => ({
         ...prevFormData,
-        objective_type: value === 'L - Learning' ? '1' :
-                        value === 'C - Committed' ? '2' :
-                        value === 'A - Aspirational' ? '3' : ''
+        objective_type:
+          value === "L - Learning"
+            ? "1"
+            : value === "C - Committed"
+            ? "2"
+            : value === "A - Aspirational"
+            ? "3"
+            : "",
       }));
-    } 
-      setFormData(prevFormData => ({
-        ...prevFormData,
-        [name]: value
-      }));
-    
+    }
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [name]: value,
+    }));
   };
 
-  const handleSubmit = async(e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     let validationErrors = {};
     if (!formData.objective_name) {
-      validationErrors.objective_name = 'Please fill the input';
+      validationErrors.objective_name = "Please fill the input";
     }
     if (!formData.obj_period_type) {
-      validationErrors.obj_period_type = 'Please select an option';
+      validationErrors.obj_period_type = "Please select an option";
     }
     setErrors(validationErrors);
 
     if (Object.keys(validationErrors).length === 0) {
       try {
         const response = await apiService.post(
-          `objectives/objectives?user_id=${parsedData.user_id}`,[formData]
+          `objectives/objectives?user_id=${parsedData.user_id}`,
+          [formData]
         );
-        if(response){
-          setIsobj(false)
-      getCompanyOKRList(parsedData.user_id);
-          
+        if (response) {
+          setIsobj(false);
+          getCompanyOKRList(parsedData.user_id);
         }
       } catch (error) {
         console.error("failed:", error);
       }
-      console.log('Form submitted successfully', formData);
+      console.log("Form submitted successfully", formData);
     }
   };
   const openFrom =()=>{
@@ -319,7 +337,7 @@ const getParentObj = (val)=>{
     }
   return (
     <div className="companyDiv">
-       {companyOKRList &&
+      {companyOKRList &&
         companyOKRList.map(
           (items, i) =>
             items.type === "Objective" && (
@@ -537,14 +555,17 @@ const getParentObj = (val)=>{
                        
                           <div
                             id={`collapseIn${subIndex}`}
-                            class="accordion-collapse collapse disIn text-start kr-dtl-title"
+                            className="accordion-collapse collapse text-start kr-dtl-title"
                           >
-                            <p>US Business update</p>
+                            <p className="font-weight-bold">
+                              {items.objective_name}
+                            </p>
 
-                            <div className="readmore-content">
-                              US Business update
+                            <div className="readmore-content text-muted mb-3">
+                              {items.objective_details}
                             </div>
-                            <div className="p-3">
+
+                            <div className="p-3 bg-white border rounded shadow-sm">
                               {/* Progress Bar */}
                               <div className="d-flex align-items-center mb-3">
                                 <div
@@ -554,121 +575,130 @@ const getParentObj = (val)=>{
                                   <div
                                     className="progress-bar bg-success"
                                     role="progressbar"
-                                    style={{ width: "66%" }}
-                                    aria-valuenow="66"
+                                    style={{ width: `${items.progress}%` }}
+                                    aria-valuenow={items.progress}
                                     aria-valuemin="0"
                                     aria-valuemax="100"
                                   ></div>
                                 </div>
                                 <div
-                                  className="font-weight-bold"
-                                  style={{ minWidth: "25px" }}
+                                  className="font-weight-bold text-dark"
+                                  style={{ minWidth: "35px" }}
                                 >
-                                  66%
+                                  {items.progress}%
                                 </div>
                               </div>
 
-                              {/* Timeline Content */}
-                              <div className="comments-section">
-                                <div className="p-3 border rounded bg-light">
-                                  <p className="mb-1">
-                                    <strong>Update:</strong> Moved from 0 to 26%
-                                  </p>
-                                  <p className="mb-1">
-                                    <strong>Modified on:</strong> 1st Oct, 2024,
-                                    3:58 PM
-                                  </p>
-                                  <p className="mb-0">
-                                    <strong>Comments:</strong> checkin
-                                  </p>
-                                  <div className="mt-2">
-                                    <a
-                                      className="text-primary"
-                                      onClick={handleAddCommentClick}
-                                      href="/"
-                                    >
-                                      Add Comment
-                                    </a>
-                                  </div>
-                                  {showInput && (
-                                    <div className="mt-2">
-                                      <textarea
-                                        className="form-control"
-                                        rows="3"
-                                        placeholder="Add comments"
-                                        value={commentText}
-                                        onChange={(e) =>
-                                          setCommentText(e.target.value)
-                                        }
-                                      ></textarea>
-                                      <button
-                                        className="button-kr mt-2"
-                                        onClick={handleCommentSubmit}
-                                        disabled={!commentText.trim()}
-                                      >
-                                        Submit
-                                      </button>
-                                    </div>
-                                  )}
+                              {/* Comments Section */}
+                              {viewMore && (
+  <div className="expanded-content">
+  {subItem.logs.map((log, index) => (
+    <div
+      key={index}
+      className="p-3 border rounded bg-light mb-3 log-entry"
+    >
+      <p className="mb-1">
+        <strong>Update:</strong>{" "}
+        {`Moved from ${
+          log.old_progress || 0
+        }% to ${log.progress}%`}
+      </p>
+      <p className="mb-1">
+        <strong>Modified on:</strong>{" "}
+        {new Date(
+          log.action_timestamp
+        ).toLocaleString()}
+      </p>
+      <p className="mb-0">
+        <strong>Comments:</strong>{" "}
+        {log.notes_checkin || "No comments"}
+      </p>
 
-                                  {viewMore && (
-                                    <div className="mt-3">
-                                      {comments.map((comment, index) => (
-                                        <div
-                                          key={index}
-                                          className="p-3 mt-3 rounded"
-                                          style={{
-                                            backgroundColor: "#3366ff",
-                                            color: "#fff",
-                                          }}
-                                        >
-                                          <p className="mb-1">
-                                            <strong>Comments:</strong>{" "}
-                                            {comment.text}
-                                          </p>
-                                          <p className="mb-1">
-                                            <strong>Modified on:</strong>{" "}
-                                            {comment.modifiedOn}
-                                          </p>
-                                          <p className="mb-0">
-                                            <strong>Commented By:</strong>{" "}
-                                            {comment.commentedBy}
-                                          </p>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                  {/* Display Comments */}
-                                  {comments.map((comment, index) => (
-                                    <div
-                                      key={index}
-                                      className="p-3 mt-3 rounded"
-                                      style={{
-                                        backgroundColor: "#3366ff",
-                                        color: "#fff",
-                                      }}
-                                    >
-                                      <p className="mb-1">
-                                        <strong>Comments:</strong>{" "}
-                                        {comment.text}
-                                      </p>
-                                      <p className="mb-1">
-                                        <strong>Modified on:</strong>{" "}
-                                        {comment.modifiedOn}
-                                      </p>
-                                      <p className="mb-0">
-                                        <strong>Commented By:</strong>{" "}
-                                        {comment.commentedBy}
-                                      </p>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
+      {/* Add Comment Link */}
+      <div className="mt-2">
+        <a
+          className="text-primary"
+          onClick={() =>
+            handleAddCommentClick(index)
+          }
+          style={{
+            cursor: "pointer",
+            textDecoration: "underline",
+          }}
+        >
+          Add Comment
+        </a>
+      </div>
 
+      {/* Comment Input Box */}
+      {activeCommentIndex === index && (
+        <div className="mt-3">
+          <textarea
+            className="form-control"
+            rows="3"
+            placeholder="Add comments"
+            value={commentText}
+            onChange={(e) =>
+              setCommentText(e.target.value)
+            }
+          ></textarea>
+          <button
+            className="btn btn-primary mt-2"
+            onClick={() =>
+              handleCommentSubmit({ subItem })
+            }
+            disabled={!commentText.trim()}
+          >
+            Submit
+          </button>
+        </div>
+      )}
+
+      {/* Display Comments */}
+      {comments[index] &&
+        comments[index].map(
+          (comment, commentIndex) => (
+            <div
+              key={commentIndex}
+              className="mt-3"
+            >
+              <div
+                className="p-3 rounded"
+                style={{
+                  backgroundColor: "#3366ff",
+                  color: "#fff",
+                }}
+              >
+                <p className="mb-1">
+                  <strong>Comments:</strong>{" "}
+                  {comment.text}
+                </p>
+                <p className="mb-1">
+                  <strong>Modified on:</strong>{" "}
+                  {comment.modifiedOn}
+                </p>
+                <p className="mb-0">
+                  <strong>Commented By:</strong>{" "}
+                  {comment.commentedBy}
+                </p>
+              </div>
+            </div>
+          
+        ))}
+    </div>
+  ))}
+</div>
+                              )}
+                            
+
+                              {/* View More / View Less */}
                               <div className="mt-2">
                                 <a
-                                  href="/"
                                   className="text-primary"
+                                  style={{
+                                    cursor: "pointer",
+                                    textDecoration: "underline",
+                                  }}
                                   onClick={handleViewMoreClick}
                                 >
                                   {viewMore ? "View Less" : "View More"}
@@ -688,75 +718,88 @@ const getParentObj = (val)=>{
       <button onClick={keyFrom} disabled={isKeybtn}  style={{opacity: isKeybtn && 0.6,}}>Create Key Result</button>
      </div>
       {/* create form */}
-      {
-    isObj && 
-    <div className=' mt-4'>
-    <form  className='p-2 border rounded'>
-      <div className='mb-3 text-start'>
-        <label htmlFor='objective' className='form-label fw-bold createFormLabel'>
-          Objective
-        </label>
-        <input
-          type='text'
-          id='objective_name'
-          name='objective_name'
-          className='form-control'
-          placeholder='Please Provide Your Objective'
-          value={formData.objective_name}
-          onChange={handleChange}
-        />
-        {errors.objective_name && (
-          <div className='text-danger mt-1'>{errors.objective_name}</div>
-        )}
-      </div>
+      {isObj && (
+        <div className=" mt-4">
+          <form className="p-2 border rounded">
+            <div className="mb-3 text-start">
+              <label
+                htmlFor="objective"
+                className="form-label fw-bold createFormLabel"
+              >
+                Objective
+              </label>
+              <input
+                type="text"
+                id="objective_name"
+                name="objective_name"
+                className="form-control"
+                placeholder="Please Provide Your Objective"
+                value={formData.objective_name}
+                onChange={handleChange}
+              />
+              {errors.objective_name && (
+                <div className="text-danger mt-1">{errors.objective_name}</div>
+              )}
+            </div>
 
-      <div className='mb-3 text-start'>
-        <label htmlFor='description' className='form-label fw-bold createFormLabel'>
-          Description
-        </label>
-        <textarea
-          id='description'
-          name='objective_details'
-          className='form-control'
-          placeholder='Objective description'
-          value={formData.objective_details}
-          onChange={handleChange}
-        ></textarea>
-      </div>
+            <div className="mb-3 text-start">
+              <label
+                htmlFor="description"
+                className="form-label fw-bold createFormLabel"
+              >
+                Description
+              </label>
+              <textarea
+                id="description"
+                name="objective_details"
+                className="form-control"
+                placeholder="Objective description"
+                value={formData.objective_details}
+                onChange={handleChange}
+              ></textarea>
+            </div>
 
-      <div className='mb-3 text-start'>
-        <label htmlFor='objectiveType' className='form-label fw-bold createFormLabel'>
-          Objective Type
-        </label>
-        <select
-          id='obj_period_type'
-          name='obj_period_type'
-          className='form-select'
-          value={formData.obj_period_type}
-          onChange={handleChange}
-        >
-          <option value='L - Learning'>L - Learning</option>
-          <option value='C - Committed'>C - Committed</option>
-          <option value='A - Aspirational'>A - Aspirational</option>
-        </select>
-        {errors.obj_period_type && (
-          <div className='text-danger mt-1'>{errors.obj_period_type}</div>
-        )}
-      </div>
+            <div className="mb-3 text-start">
+              <label
+                htmlFor="objectiveType"
+                className="form-label fw-bold createFormLabel"
+              >
+                Objective Type
+              </label>
+              <select
+                id="obj_period_type"
+                name="obj_period_type"
+                className="form-select"
+                value={formData.obj_period_type}
+                onChange={handleChange}
+              >
+                <option value="L - Learning">L - Learning</option>
+                <option value="C - Committed">C - Committed</option>
+                <option value="A - Aspirational">A - Aspirational</option>
+              </select>
+              {errors.obj_period_type && (
+                <div className="text-danger mt-1">{errors.obj_period_type}</div>
+              )}
+            </div>
 
-      <div className='mb-3 text-start'>
-        <label htmlFor='period' className='form-label fw-bold createFormLabel'>
-          Period
-        </label>
-        <select
-          id='period'
-          name='period'
-          className='form-select'
-          value={formData.period}
-        >
-          <option value='Annual' disabled>Annual</option>
-        </select>
-      </div>
+            <div className="mb-3 text-start">
+              <label
+                htmlFor="period"
+                className="form-label fw-bold createFormLabel"
+              >
+                Period
+              </label>
+              <select
+                id="period"
+                name="period"
+                className="form-select"
+                value={formData.period}
+              >
+                <option value="Annual" disabled>
+                  Annual
+                </option>
+              </select>
+            </div>
 
       <div className='d-flex justify-content-between gap-3'>
         <button onClick={openFrom} type='button' className='subBtn'>
@@ -768,7 +811,7 @@ const getParentObj = (val)=>{
       </div>
     </form>
   </div>
-      }
+      )}
       {
     isKey && 
     <div className=' mt-4'>
@@ -850,10 +893,6 @@ const getParentObj = (val)=>{
     </form>
   </div>
       }
-      
-
-
-     
     </div>
   );
 }

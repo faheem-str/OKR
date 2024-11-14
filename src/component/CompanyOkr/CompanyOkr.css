@@ -261,3 +261,21 @@ p{
   margin-left: auto;
   margin-bottom: 6px;
 }
+=======
+
+  .comment-entry {
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 10px;
+  }
+
+  .log-entry {
+    background-color: #eef2f5;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+  }
+
+  .expanded-content {
+    margin-top: 15px;
+  }
