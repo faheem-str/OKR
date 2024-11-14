@@ -208,3 +208,22 @@ p{
     font-size: 12px;
     color: #282828;
   }
+  .ObjectDiv:focus{
+    border: 2px solid gray;
+  }
+  .kr:before {
+    content: "KR";
+    position: absolute;
+    background-color: #00000010;
+    padding: 10px 8px;
+    left: 0%;
+    top: 50%;
+    transform: translate(-5%, -50%);
+    font-size: 12px;
+    z-index: 99;
+    color: #000;
+    font-weight: bold;
+}
+.m25{
+  margin-left: 25px !important;
+}

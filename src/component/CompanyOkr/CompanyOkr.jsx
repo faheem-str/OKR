@@ -291,8 +291,8 @@ const getParentObj = (val)=>{
             items.type === "Objective" && (
               <div key={i} className="w-100 d-inline-block mb-1 mt-1" onClick={()=>getParentObj(items.id)}>
                 <div class="accordion" id="accordionExample">
-                  <div class="accordion-item" >
-                    <div
+                  <div class="accordion-item" tabindex={i}>
+                    <div tabindex={i}
                       class="collapsed ObjectDiv d-flex"
                       type="button"
                       data-bs-toggle="collapse"
@@ -377,13 +377,13 @@ const getParentObj = (val)=>{
                             aria-expanded="false"
                             aria-controls="collapseOne"
                           >
-                            <div className="ComKeypercentTracker position-relative">
+                            <div className="kr ComKeypercentTracker position-relative">
                               {/* Progress bar fill */}
                               <div
                                 className="progress-fill"
                                 style={{
-                                  width: `${keypercentage}%`, // Dynamic width
-                                  backgroundColor: keyBackgroundColor, // Dynamic color
+                                  width: `${subItem.progress}%`, // Dynamic width
+                                  backgroundColor: objPercentFn(subItem.progress), // Dynamic color
                                   height: "100%",
                                   position: "absolute",
                                   top: 0,
@@ -398,7 +398,7 @@ const getParentObj = (val)=>{
                                 className="content-wrapper d-flex justify-content-between align-items-center w-100"
                                 style={{ position: "relative", zIndex: 2 }}
                               >
-                                <p className="ComObjName">US Business</p>
+                                <p className="ComObjName m25">{subItem.progress+ "% "}{subItem.objective_name}</p>
                                 <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
                                   <div
                                     className="ComTeamName d-flex justify-content-center align-items-center"
@@ -407,7 +407,15 @@ const getParentObj = (val)=>{
                                     <p>CO</p>
                                   </div>
                                   <div className="objtype-tag d-flex justify-content-center align-items-center">
-                                    <p>A</p>
+                                    <p>
+                                    {subItem.obj_period_type === "A - Aspirational"
+                                  ? "A"
+                                  : subItem.obj_period_type === "L - Learning"
+                                  ? "L"
+                                  : subItem.obj_period_type === "C - Committed"
+                                  ? "C"
+                                  : null}
+                                    </p>
                                   </div>
                                   <div className="mark-as"></div>
                                 </div>
