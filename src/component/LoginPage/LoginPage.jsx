@@ -37,18 +37,21 @@ const Login = () => {
     });
   };
 
-  const handleLogin = async () => {
+  const handleLogin = async (e) => {
+    // Prevent form default submission behavior
+    e.preventDefault();
+
     // Validation checks
     let valid = true;
     const newErrors = { user: '', password: '' };
 
     if (!validateEmail(credentials.user)) {
-      newErrors.user = 'please enter a valid user address.';
+      newErrors.user = 'Please enter a valid username.';
       valid = false;
     }
 
     if (!validatePassword(credentials.password)) {
-      newErrors.password = 'please enter a valid password.';
+      newErrors.password = 'Please enter a valid password.';
       valid = false;
     }
 
@@ -63,7 +66,7 @@ const Login = () => {
         password: credentials.password,
       });
       sessionStorage.setItem('authToken', response.data.access_token);
-      sessionStorage.setItem('userData',JSON.stringify(response.data))
+      sessionStorage.setItem('userData', JSON.stringify(response.data));
       navigate('/dashboard');
     } catch (error) {
       console.error('Login failed:', error);
@@ -87,10 +90,15 @@ const Login = () => {
         <Typography variant="body1" align="center" gutterBottom>
           Enter your username and password to sign in
         </Typography>
-        <Box component="form" width="100%" maxWidth="400px">
+        <Box
+          component="form"
+          width="100%"
+          maxWidth="400px"
+          onSubmit={handleLogin} // Add onSubmit handler
+        >
           <TextField
             fullWidth
-            type="user"
+            type="text"
             name="user"
             value={credentials.user}
             onChange={handleInputChange}
@@ -119,7 +127,7 @@ const Login = () => {
             variant="contained"
             color="primary"
             sx={{ mt: 2 }}
-            onClick={handleLogin}
+            type="submit" // Change to type="submit"
           >
             Submit
           </Button>
@@ -144,7 +152,7 @@ const Login = () => {
         }}
       >
         <Box
-          className="col-6 d-lg-flex d-none h-100 my-auto pe-0 position-absolute top-0 end-0 text-center justify-content-center flex-column"
+          className="col-6 d-lg-flex d-none h-100 my-auto pe-0 position-absolute top-0 end-0 text-center justify-content-center flex-column w-100"
           sx={{
             display: { lg: 'flex', xs: 'none' },
             height: '100%',
@@ -156,11 +164,13 @@ const Login = () => {
             alignItems: 'center',
           }}
         >
-          <img
-            src={LogoImage}
-            alt="XERAGO Logo"
-            style={{ width: '385px', height: 'auto', marginRight: '88px' }}
-          />
+          <div className="bgImg">
+            <img
+              src={LogoImage}
+              alt="XERAGO Logo"
+              style={{ width: '385px', height: 'auto', marginRight: '88px' }}
+            />
+          </div>
         </Box>
       </Box>
     </Box>
