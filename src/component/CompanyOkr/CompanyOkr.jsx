@@ -13,6 +13,8 @@ function CompanyOKR() {
   const [isKey,setIsKey]=useState(false)
   const [isKeybtn,setIsKeybtn]=useState(true)
   const [isObjbtn,setIsObjbtn]=useState(false)
+  const [logs] = useState([]);
+  const [activeCommentIndex, setActiveCommentIndex] = useState(null);
 
 
 
