@@ -2,7 +2,7 @@
 import React, { useEffect, useState,useMemo } from 'react'
 import './Header.css'
 import apiService from '../../ApiService/service'
-export default function Header() {
+export default function Header({ onDropdownChange }) {
     const [data,setData]=useState('')
     const [viewOpen, setViewOpen] = useState(false);
     const [completionOpen, setCompletionOpen] = useState(false);
@@ -11,6 +11,8 @@ export default function Header() {
     const [checkinOpen, setCheckinOpen] = useState(false);
     const [sortOpen, setSortOpen] = useState(false);
     const [groups,setGroups]=useState([])
+    const [selectedView, setSelectedView] = useState('Compact'); // For storing the selected view
+
     useEffect(() => {
         const storedData = sessionStorage.getItem('userData');
         if (storedData) {
@@ -55,7 +57,10 @@ export default function Header() {
     const sortDrop = () => {
         setSortOpen(!sortOpen);
     };
-    
+    const handleRadioChange = (event) => {
+      setSelectedView(event.target.value); // Update selected view
+      onDropdownChange(event.target.value)
+    };
   return (
     <nav className="navbar p-2 px-3">
     <div className="m-0 d-flex w-100 m-0 justify-content-between align-items-center custom-height">
@@ -80,13 +85,21 @@ export default function Header() {
   <ul className="dropdown-menu" aria-labelledby="dropdownMenu2">
     <li className="dropdown-header drop-Name">Action</li>
     <li className='dropdown-item d-flex align-items-center gap-1 p-2'>
-    <input className="form-check-input custom-sizeCheckbox" type="radio" name="flexRadioDefault" id="flexRadioDefault1" />
+    <input
+      checked={selectedView === 'Compact'}
+     onChange={handleRadioChange}
+     value="Compact"
+     className="form-check-input custom-sizeCheckbox" type="radio" name="flexRadioDefault" id="flexRadioDefault1" />
   <label className="form-check-label" for="flexRadioDefault1">
    Compact
   </label>
     </li>
     <li className='dropdown-item d-flex align-items-center gap-1 p-2'>
-    <input className="form-check-input custom-sizeCheckbox" type="radio" name="flexRadioDefault" id="flexRadioDefault1" />
+    <input
+    checked={selectedView === 'Detailed'}
+    onChange={handleRadioChange}
+    value="Detailed"
+    className="form-check-input custom-sizeCheckbox" type="radio" name="flexRadioDefault" id="flexRadioDefault1" />
   <label className="form-check-label" for="flexRadioDefault1">
     Detailed
   </label>

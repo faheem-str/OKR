@@ -66,6 +66,7 @@ p{
 }
 .ComTeamName p{
     color: #fff;
+    font-size: 12px;
 }
 .objtype-tag{
     width: 19px;
@@ -208,6 +209,59 @@ p{
     font-size: 12px;
     color: #282828;
   }
+  .ObjectDiv:focus{
+    border: 2px solid gray;
+  }
+  .kr:before {
+    content: "KR";
+    position: absolute;
+    background-color: #00000010;
+    padding: 10px 8px;
+    left: 0%;
+    top: 50%;
+    transform: translate(-5%, -50%);
+    font-size: 12px;
+    z-index: 99;
+    color: #000;
+    font-weight: bold;
+}
+.m25{
+  margin-left: 25px !important;
+}
+.detailDiv{
+  padding: 10px;
+  border-left: 1px solid #d2cece7a;
+  border-right: 1px solid #d2cece7a;
+  border-bottom: 1px solid #d2cece7a;
+  border-radius: 5px;
+  border-top-right-radius: 0px;
+  border-top-left-radius: 0px;
+  margin-top: 0px;
+  background-color: #fff;
+}
+.detailTitle{
+  font-size: 12px;
+  color: #67748E;
+}
+.detailIcon{
+  font-size: 12px;
+  margin-right: 6px ;
+}
+.keyDetailDiv{
+  padding: 10px;
+  border-left: 1px solid #d2cece7a;
+  border-right: 1px solid #d2cece7a;
+  border-bottom: 1px solid #d2cece7a;
+  border-radius: 5px;
+  border-top-right-radius: 0px;
+  border-top-left-radius: 0px;
+  margin-top: 0px;
+  background-color: #fff;
+  width: 89%;
+  margin-left: auto;
+  margin-bottom: 6px;
+}
+=======
 
   .comment-entry {
     padding: 10px;
