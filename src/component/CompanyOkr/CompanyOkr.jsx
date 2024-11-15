@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./CompanyOkr.css";
 import apiService from "../../ApiService/service";
-function CompanyOKR() {
+function CompanyOKR({ dropdownValue }) {
   const [backgroundColor, setBackgroundColor] = useState("");
   const [keyBackgroundColor, setKeyBackgroundColor] = useState("");
 
@@ -15,7 +15,7 @@ function CompanyOKR() {
   const [isObjbtn, setIsObjbtn] = useState(false);
   const [logs] = useState([]);
   const [activeCommentIndex, setActiveCommentIndex] = useState(null);
-  const [keyParent, setKeyParent] = useState([])
+  const [keyParent, setKeyParent] = useState([]);
 
   useEffect(() => {
     KeyPercentFn();
@@ -24,10 +24,13 @@ function CompanyOKR() {
       setParsedData(JSON.parse(userData));
     }
   }, []);
+  useEffect(() => {
+    console.log(dropdownValue);
+  }, [dropdownValue]);
 
   useEffect(() => {
     if (parsedData && parsedData.user_id) {
-      console.log('parsedData', parsedData.user_id);
+      console.log("parsedData", parsedData.user_id);
       getCompanyOKRList(parsedData.user_id);
     }
     if (parsedData && parsedData.user_id) {
@@ -75,7 +78,7 @@ function CompanyOKR() {
   const handleAddCommentClick = (index) => {
     // setShowInput(true);
     // setActiveCommentIndex(activeCommentIndex === index ? null : index);
-    setActiveCommentIndex(index); 
+    setActiveCommentIndex(index);
   };
 
   const handleViewMoreClick = () => {
@@ -117,21 +120,22 @@ function CompanyOKR() {
       );
       console.log(response);
       setcompanyOKRList(response.data);
-
     } catch (error) {
       console.error("Login failed:", error);
     }
   };
 
-  const objectiveWithKeyResult = async (id, team) => {
+  const objectiveWithKeyResult = async (id) => {
     try {
-      const response = await apiService.get(`objectives/objectives_with_key_results_parent?user_id=${id.user_id}&parent_id=${id.id}&tName=${parsedData.department}`)
-      console.log(response)
-      setKeyParent(response.data)
-    } catch(error){
-    console.log(error)
+      const response = await apiService.get(
+        `objectives/objectives_with_key_results_parent?user_id=${id.user_id}&parent_id=${id.id}&tName=${parsedData.department}`
+      );
+      console.log(response);
+      setKeyParent(response.data);
+    } catch (error) {
+      console.log(error);
     }
-  }
+  };
 
   const [markedRows, setMarkedRows] = useState({});
   const handleMarkAsClick = (index) => {
@@ -310,6 +314,42 @@ function CompanyOKR() {
       console.log("Form submitted successfully", formData);
     }
   };
+  function formatDate(dateString) {
+    const date = new Date(dateString);
+
+    // Extract date components
+    const day = date.getDate();
+    const month = date.toLocaleString("default", { month: "short" });
+    const year = date.getFullYear();
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+
+    // Format day with suffix
+    const daySuffix = (day) => {
+      if (day > 3 && day < 21) return "th"; // for 4th-20th
+      switch (day % 10) {
+        case 1:
+          return "st";
+        case 2:
+          return "nd";
+        case 3:
+          return "rd";
+        default:
+          return "th";
+      }
+    };
+
+    // Convert 24-hour time to 12-hour format
+    const formattedHours = hours % 12 || 12;
+    const ampm = hours >= 12 ? "PM" : "AM";
+
+    // Pad minutes with leading zero if needed
+    const formattedMinutes = minutes.toString().padStart(2, "0");
+
+    return `${day}${daySuffix(
+      day
+    )} ${month}, ${year}, ${formattedHours}:${formattedMinutes} ${ampm}`;
+  }
   return (
     <div className="companyDiv">
       {companyOKRList &&
@@ -358,26 +398,31 @@ function CompanyOKR() {
                         >
                           <p className="ComObjName">{items.objective_name}</p>
                           <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
-                            <div
-                              className="ComTeamName d-flex justify-content-center align-items-center"
-                              title="Company OKR"
-                            >
-                              <p>CO</p>
-                            </div>
-                            <div
-                              className="objtype-tag d-flex justify-content-center align-items-center"
-                              title={items.obj_period_type}
-                            >
-                              <p>
-                                {items.obj_period_type === "A - Aspirational"
-                                  ? "A"
-                                  : items.obj_period_type === "L - Learning"
-                                  ? "L"
-                                  : items.obj_period_type === "C - Committed"
-                                  ? "C"
-                                  : null}
-                              </p>
-                            </div>
+                            {dropdownValue !== "Detailed" && (
+                              <div
+                                className="ComTeamName d-flex justify-content-center align-items-center"
+                                title="Company OKR"
+                              >
+                                <p>CO</p>
+                              </div>
+                            )}
+                            {dropdownValue !== "Detailed" && (
+                              <div
+                                className="objtype-tag d-flex justify-content-center align-items-center"
+                                title={items.obj_period_type}
+                              >
+                                <p>
+                                  {items.obj_period_type === "A - Aspirational"
+                                    ? "A"
+                                    : items.obj_period_type === "L - Learning"
+                                    ? "L"
+                                    : items.obj_period_type === "C - Committed"
+                                    ? "C"
+                                    : null}
+                                </p>
+                              </div>
+                            )}
+
                             <div
                               className="mark-as"
                               onClick={() => handleMarkAsClick(i)}
@@ -391,220 +436,348 @@ function CompanyOKR() {
                         </div>
                       </div>
                     </div>
-                    {items.key_results &&
-                      items.key_results.map((subItem, subIndex) => (
-                        <div
-                          id={`accordionExample-${i}`}
-                          className={`accordion-collapse collapse ${
-                            i === 0 && "show"
-                          }`}
-                          aria-labelledby="headingOne"
-                          data-bs-parent="#accordionExample"
-                        >
-                          <div
-                            class="accordion-body p0 m0 accordion-button"
-                            type="button"
-                            data-bs-toggle="collapse"
-                            data-bs-target={`#collapseIn${subIndex}`}
-                            aria-expanded="false"
-                            aria-controls="collapseOne"
-                            onClick={()=>objectiveWithKeyResult(subItem)}
-                          >
-                            <div className="kr ComKeypercentTracker position-relative">
-                              {/* Progress bar fill */}
-                              <div
-                                className="progress-fill"
-                                style={{
-                                  width: `${subItem.progress}%`, // Dynamic width
-                                  backgroundColor: objPercentFn(
-                                    subItem.progress
-                                  ), // Dynamic color
-                                  height: "100%",
-                                  position: "absolute",
-                                  top: 0,
-                                  left: 0,
-                                  borderRadius: "0px 6px 6px 0px",
-                                  zIndex: 1,
-                                }}
-                              ></div>
-
-                              {/* Content inside the progress bar */}
-                              <div
-                                className="content-wrapper d-flex justify-content-between align-items-center w-100"
-                                style={{ position: "relative", zIndex: 2 }}
-                              >
-                                <p className="ComObjName m25">
-                                  {subItem.progress + "% "}
-                                  {subItem.objective_name}
-                                </p>
-                                <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
-                                  <div
-                                    className="ComTeamName d-flex justify-content-center align-items-center"
-                                    title="Tooltip on top"
-                                  >
-                                    <p>CO</p>
-                                  </div>
-                                  <div className="objtype-tag d-flex justify-content-center align-items-center">
-                                    <p>
-                                      {subItem.obj_period_type ===
-                                      "A - Aspirational"
-                                        ? "A"
-                                        : subItem.obj_period_type ===
-                                          "L - Learning"
-                                        ? "L"
-                                        : subItem.obj_period_type ===
-                                          "C - Committed"
-                                        ? "C"
-                                        : null}
-                                    </p>
-                                  </div>
-                                  <div className="mark-as"></div>
-                                </div>
-                              </div>
+                    {dropdownValue === "Detailed" && (
+                      <div className="w-100 detailDiv">
+                        <div className="w-100 d-flex justify-content-between align-items-center">
+                          <p className="detailTitle">{items.objective_name}</p>
+                          <div>
+                            <i
+                              class="fa fa-pencil detailIcon"
+                              aria-hidden="true"
+                            ></i>
+                            <i
+                              class="fa fa-trash detailIcon"
+                              aria-hidden="true"
+                            ></i>
+                          </div>
+                        </div>
+                        <div className="w-100 d-flex justify-content-between align-items-center mt-3">
+                          <p className="detailTitle">
+                            {formatDate(items.created_at)}{" "}
+                            <i class="fas fa-clock"></i>
+                          </p>
+                          <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
+                            <div
+                              className="ComTeamName d-flex justify-content-center align-items-center"
+                              title="Tooltip on top"
+                            >
+                              <p>CO</p>
+                            </div>
+                            <div className="objtype-tag d-flex justify-content-center align-items-center">
+                              <p>
+                                {items.obj_period_type === "A - Aspirational"
+                                  ? "A"
+                                  : items.obj_period_type === "L - Learning"
+                                  ? "L"
+                                  : items.obj_period_type === "C - Committed"
+                                  ? "C"
+                                  : null}
+                              </p>
                             </div>
                           </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {dropdownValue === "Detailed" && (
+                    <div className="w-100 detailDiv">
+                      <div className="w-100 d-flex justify-content-between align-items-center">
+                        <p className="detailTitle">{items.objective_name}</p>
+                        <div>
+                          <i
+                            class="fa fa-pencil detailIcon"
+                            aria-hidden="true"
+                          ></i>
+                          <i
+                            class="fa fa-trash detailIcon"
+                            aria-hidden="true"
+                          ></i>
+                        </div>
+                      </div>
+                      <div className="w-100 d-flex justify-content-between align-items-center mt-3">
+                        <p className="detailTitle">
+                          {formatDate(items.created_at)}{" "}
+                          <i class="fas fa-clock"></i>
+                        </p>
+                        <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
                           <div
-                            id={`collapseIn${subIndex}`}
-                            class="accordion-collapse collapse disIn text-start kr-dtl-title"
+                            className="ComTeamName d-flex justify-content-center align-items-center"
+                            title="Tooltip on top"
                           >
-                            <p>{items.objective_name}</p>
+                            <p>CO</p>
+                          </div>
+                          <div className="objtype-tag d-flex justify-content-center align-items-center">
+                            <p>
+                              {items.obj_period_type === "A - Aspirational"
+                                ? "A"
+                                : items.obj_period_type === "L - Learning"
+                                ? "L"
+                                : items.obj_period_type === "C - Committed"
+                                ? "C"
+                                : null}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
-                            <div className="readmore-content">
-                              {items.objective_details}
-                            </div>
-                            <div className="p-3">
-                              {/* Progress Bar */}
-                              <div className="d-flex align-items-center mb-3">
+                  {items.key_results &&
+                    items.key_results.map((subItem, subIndex) => (
+                      <div
+                        id={`accordionExample-${i}`}
+                        className={`accordion-collapse collapse ${
+                          i === 0 && "show"
+                        } ${dropdownValue === "Detailed" && "show"}`}
+                        aria-labelledby="headingOne"
+                        data-bs-parent="#accordionExample"
+                      >
+                        <div
+                          class="accordion-body p0 m0 accordion-button"
+                          type="button"
+                          data-bs-toggle="collapse"
+                          data-bs-target={`#collapseIn${subIndex}`}
+                          aria-expanded="false"
+                          aria-controls="collapseOne"
+                          onClick={() => objectiveWithKeyResult(subItem)}
+                        >
+                          <div className="kr ComKeypercentTracker position-relative">
+                            {/* Progress bar fill */}
+                            <div
+                              className="progress-fill"
+                              style={{
+                                width: `${subItem.progress}%`, // Dynamic width
+                                backgroundColor: objPercentFn(subItem.progress), // Dynamic color
+                                height: "100%",
+                                position: "absolute",
+                                top: 0,
+                                left: 0,
+                                borderRadius: "0px 6px 6px 0px",
+                                zIndex: 1,
+                              }}
+                            ></div>
+
+                            {/* Content inside the progress bar */}
+                            <div
+                              className="content-wrapper d-flex justify-content-between align-items-center w-100"
+                              style={{ position: "relative", zIndex: 2 }}
+                            >
+                              <p className="ComObjName m25">
+                                {subItem.progress + "% "}
+                                {subItem.objective_name}
+                              </p>
+                              <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
                                 <div
-                                  className="progress flex-grow-1"
-                                  style={{ height: "6px", marginRight: "10px" }}
+                                  className="ComTeamName d-flex justify-content-center align-items-center"
+                                  title="Tooltip on top"
                                 >
-                                  <div
-                                    className="progress-bar bg-success"
-                                    role="progressbar"
-                                    style={{ width: `${items.progress}%` }}
-                                    aria-valuenow="66"
-                                    aria-valuemin="0"
-                                    aria-valuemax="100"
-                                  ></div>
+                                  <p>CO</p>
                                 </div>
-                                <div
-                                  className="font-weight-bold"
-                                  style={{ minWidth: "25px" }}
-                                >
-                                  {items.progress}%
+                                <div className="objtype-tag d-flex justify-content-center align-items-center">
+                                  <p>
+                                    {subItem.obj_period_type ===
+                                    "A - Aspirational"
+                                      ? "A"
+                                      : subItem.obj_period_type ===
+                                        "L - Learning"
+                                      ? "L"
+                                      : subItem.obj_period_type ===
+                                        "C - Committed"
+                                      ? "C"
+                                      : null}
+                                  </p>
                                 </div>
-                              </div>
-
-                              {/* Timeline Content */}
-                              {viewMore && (
-                                <div className="comments-section">
-                                  {subItem.logs.map((log, index) => (
-                                    <div
-                                      key={index}
-                                      className="p-3 border rounded bg-light mb-3"
-                                    >
-                                      <p className="mb-1">
-                                        <strong>Update:</strong>{" "}
-                                        {`Moved from ${
-                                          log.old_progress || 0
-                                        }% to ${log.progress}%`}
-                                      </p>
-                                      <p className="mb-1">
-                                        <strong>Modified on:</strong>{" "}
-                                        {new Date(
-                                          log.action_timestamp
-                                        ).toLocaleString()}
-                                      </p>
-                                      <p className="mb-0">
-                                        <strong>Comments:</strong>{" "}
-                                        {log.notes_checkin || "No comments"}
-                                      </p>
-                                      <div className="mt-2">
-                                        <a
-                                          className="text-primary"
-                                          onClick={() =>
-                                            handleAddCommentClick(index)
-                                          }
-                                          style={{
-                                            cursor: "pointer",
-                                            textDecoration: "underline",
-                                          }}
-                                        >
-                                          Add Comment
-                                        </a>
-                                      </div>
-                                      {activeCommentIndex === index && (
-                                        <div className="mt-2">
-                                          <textarea
-                                            className="form-control"
-                                            rows="3"
-                                            placeholder="Add comments"
-                                            value={commentText}
-                                            onChange={(e) =>
-                                              setCommentText(e.target.value)
-                                            }
-                                          ></textarea>
-                                          <button
-                                            className="button-kr mt-2"
-                                            onClick={() =>
-                                              handleCommentSubmit({ subItem })
-                                            }
-                                            disabled={!commentText.trim()}
-                                          >
-                                            Submit
-                                          </button>
-                                        </div>
-                                      )}
-                                      {/* Display Comments */}
-                                      {comments[index] &&
-                                        comments[index].map(
-                                          (comment, commentIndex) => (
-                                            <div
-                                              key={commentIndex}
-                                              className="p-3 mt-3 rounded"
-                                              style={{
-                                                backgroundColor: "#3366ff",
-                                                color: "#fff",
-                                              }}
-                                            >
-                                              <p className="mb-1">
-                                                <strong>Comments:</strong>{" "}
-                                                {comment.text}
-                                              </p>
-                                              <p className="mb-1">
-                                                <strong>Modified on:</strong>{" "}
-                                                {comment.modifiedOn}
-                                              </p>
-                                              <p className="mb-0">
-                                                <strong>Commented By:</strong>{" "}
-                                                {comment.commentedBy}
-                                              </p>
-                                            </div>
-                                          )
-                                        )}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-
-                              <div className="mt-2">
-                                <a
-                                  className="text-primary"
-                                  style={{
-                                    cursor: "pointer",
-                                    textDecoration: "underline",
-                                  }}
-                                  onClick={handleViewMoreClick}
-                                >
-                                  {viewMore ? "View Less" : "View More"}
-                                </a>
                               </div>
                             </div>
                           </div>
                         </div>
-                      ))}
-                  </div>
+                        {dropdownValue === "Detailed" && (
+                          <div className="keyDetailDiv">
+                            <div className="w-100 d-flex justify-content-between align-items-center">
+                              <p className="detailTitle">
+                                {subItem.objective_name}
+                              </p>
+                              <div>
+                                <i
+                                  class="fa fa-pencil detailIcon"
+                                  aria-hidden="true"
+                                ></i>
+                                <i
+                                  class="fa fa-trash detailIcon"
+                                  aria-hidden="true"
+                                ></i>
+                              </div>
+                            </div>
+                            <div className="w-100 d-flex justify-content-between align-items-center mt-3">
+                              <p className="detailTitle">
+                                {formatDate(subItem.created_at)}{" "}
+                                <i class="fas fa-clock"></i>
+                              </p>
+                              <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
+                                <div
+                                  className="ComTeamName d-flex justify-content-center align-items-center"
+                                  title="Tooltip on top"
+                                >
+                                  <p>CO</p>
+                                </div>
+                                <div className="objtype-tag d-flex justify-content-center align-items-center">
+                                  <p>
+                                    {subItem.obj_period_type ===
+                                    "A - Aspirational"
+                                      ? "A"
+                                      : subItem.obj_period_type ===
+                                        "L - Learning"
+                                      ? "L"
+                                      : subItem.obj_period_type ===
+                                        "C - Committed"
+                                      ? "C"
+                                      : null}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div
+                          id={`collapseIn${subIndex}`}
+                          class="accordion-collapse collapse disIn text-start kr-dtl-title"
+                        >
+                          <p>{items.objective_name}</p>
+
+                          <div className="readmore-content">
+                            {items.objective_details}
+                          </div>
+                          <div className="p-3">
+                            {/* Progress Bar */}
+                            <div className="d-flex align-items-center mb-3">
+                              <div
+                                className="progress flex-grow-1"
+                                style={{ height: "6px", marginRight: "10px" }}
+                              >
+                                <div
+                                  className="progress-bar bg-success"
+                                  role="progressbar"
+                                  style={{ width: `${items.progress}%` }}
+                                  aria-valuenow="66"
+                                  aria-valuemin="0"
+                                  aria-valuemax="100"
+                                ></div>
+                              </div>
+                              <div
+                                className="font-weight-bold"
+                                style={{ minWidth: "25px" }}
+                              >
+                                {items.progress}%
+                              </div>
+                            </div>
+
+                            {/* Timeline Content */}
+                            {viewMore && (
+                              <div className="comments-section">
+                                {subItem.logs.map((log, index) => (
+                                  <div
+                                    key={index}
+                                    className="p-3 border rounded bg-light mb-3"
+                                  >
+                                    <p className="mb-1">
+                                      <strong>Update:</strong>{" "}
+                                      {`Moved from ${
+                                        log.old_progress || 0
+                                      }% to ${log.progress}%`}
+                                    </p>
+                                    <p className="mb-1">
+                                      <strong>Modified on:</strong>{" "}
+                                      {formatDate(log.created_at)}
+                                    </p>
+                                    <p className="mb-0">
+                                      <strong>Comments:</strong>{" "}
+                                      {log.notes_checkin || "No comments"}
+                                    </p>
+                                    <div className="mt-2">
+                                      <a
+                                        className="text-primary"
+                                        onClick={() =>
+                                          handleAddCommentClick(index)
+                                        }
+                                        style={{
+                                          cursor: "pointer",
+                                          textDecoration: "underline",
+                                        }}
+                                      >
+                                        Add Comment
+                                      </a>
+                                    </div>
+                                    {activeCommentIndex === index && (
+                                      <div className="mt-2">
+                                        <textarea
+                                          className="form-control"
+                                          rows="3"
+                                          placeholder="Add comments"
+                                          value={commentText}
+                                          onChange={(e) =>
+                                            setCommentText(e.target.value)
+                                          }
+                                        ></textarea>
+                                        <button
+                                          className="button-kr mt-2"
+                                          onClick={() =>
+                                            handleCommentSubmit({ subItem })
+                                          }
+                                          disabled={!commentText.trim()}
+                                        >
+                                          Submit
+                                        </button>
+                                      </div>
+                                    )}
+                                    {/* Display Comments */}
+                                    {comments[index] &&
+                                      comments[index].map(
+                                        (comment, commentIndex) => (
+                                          <div
+                                            key={commentIndex}
+                                            className="p-3 mt-3 rounded"
+                                            style={{
+                                              backgroundColor: "#3366ff",
+                                              color: "#fff",
+                                            }}
+                                          >
+                                            <p className="mb-1">
+                                              <strong>Comments:</strong>{" "}
+                                              {comment.text}
+                                            </p>
+                                            <p className="mb-1">
+                                              <strong>Modified on:</strong>{" "}
+                                              {comment.modifiedOn}
+                                            </p>
+                                            <p className="mb-0">
+                                              <strong>Commented By:</strong>{" "}
+                                              {comment.commentedBy}
+                                            </p>
+                                          </div>
+                                        )
+                                      )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            <div className="mt-2">
+                              <a
+                                className="text-primary"
+                                style={{
+                                  cursor: "pointer",
+                                  textDecoration: "underline",
+                                }}
+                                onClick={handleViewMoreClick}
+                              >
+                                {viewMore ? "View Less" : "View More"}
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                 </div>
               </div>
             )
@@ -720,7 +893,7 @@ function CompanyOKR() {
           </form>
         </div>
       )}
-      {isKey && (
+     {isKey && (
         <div className=" mt-4">
           <form className="p-2 border rounded">
             <div className="mb-3 text-start">
