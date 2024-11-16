@@ -137,13 +137,42 @@ function CompanyOKR({ dropdownValue }) {
     }
   };
 
-  const [markedRows, setMarkedRows] = useState({});
-  const handleMarkAsClick = (index) => {
-    setMarkedRows((prevMarkedRows) => ({
-      ...prevMarkedRows,
-      [index]: !prevMarkedRows[index],
-    }));
+  const handleMarkAsClick = async (index, id) => {
+    setcompanyOKRList((prevItems) =>
+      prevItems.map((item) =>
+        item.id === id ? { ...item, important: !item.important } : item
+      )
+    );
+    try {
+      const response = await apiService.post(
+        `objectives/update-objective-important/?objective_id=${id}`
+      );
+      console.log('Successfully updated in backend');
+    } catch (error) {
+      console.error('API call failed:', error);
+    }
   };
+  const handleMarkAsClickKey = async (index, id) => {
+    setcompanyOKRList((prevItems) =>
+      prevItems.map((item) => ({
+        ...item, // Keep the parent item intact
+        key_results: item.key_results.map((subItem) =>
+          subItem.id === id
+            ? { ...subItem, important: !subItem.important } // Toggle the important flag of the subItem
+            : subItem
+        ),
+      }))
+    );
+    try {
+      const response = await apiService.post(
+        `objectives/update-objective-important/?objective_id=${id}`
+      );
+      console.log('Successfully updated in backend');
+    } catch (error) {
+      console.error('API call failed:', error);
+    }
+  };
+  
 
   // create from
   const [formData, setFormData] = useState({
@@ -425,11 +454,9 @@ function CompanyOKR({ dropdownValue }) {
 
                             <div
                               className="mark-as"
-                              onClick={() => handleMarkAsClick(i)}
+                              onClick={() => handleMarkAsClick(i,items.id)}
                               style={{
-                                backgroundColor: markedRows[i]
-                                  ? "red"
-                                  : "#d9d9d9",
+                                backgroundColor: items.important  ? "red" : "#d9d9d9"
                               }}
                             ></div>
                           </div>
@@ -479,48 +506,7 @@ function CompanyOKR({ dropdownValue }) {
                       </div>
                     )}
                   </div>
-                  {dropdownValue === "Detailed" && (
-                    <div className="w-100 detailDiv">
-                      <div className="w-100 d-flex justify-content-between align-items-center">
-                        <p className="detailTitle">{items.objective_name}</p>
-                        <div>
-                          <i
-                            class="fa fa-pencil detailIcon"
-                            aria-hidden="true"
-                          ></i>
-                          <i
-                            class="fa fa-trash detailIcon"
-                            aria-hidden="true"
-                          ></i>
-                        </div>
-                      </div>
-                      <div className="w-100 d-flex justify-content-between align-items-center mt-3">
-                        <p className="detailTitle">
-                          {formatDate(items.created_at)}{" "}
-                          <i class="fas fa-clock"></i>
-                        </p>
-                        <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
-                          <div
-                            className="ComTeamName d-flex justify-content-center align-items-center"
-                            title="Tooltip on top"
-                          >
-                            <p>CO</p>
-                          </div>
-                          <div className="objtype-tag d-flex justify-content-center align-items-center">
-                            <p>
-                              {items.obj_period_type === "A - Aspirational"
-                                ? "A"
-                                : items.obj_period_type === "L - Learning"
-                                ? "L"
-                                : items.obj_period_type === "C - Committed"
-                                ? "C"
-                                : null}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                 
 
                   {items.key_results &&
                     items.key_results.map((subItem, subIndex) => (
@@ -587,6 +573,13 @@ function CompanyOKR({ dropdownValue }) {
                                       : null}
                                   </p>
                                 </div>
+                                <div
+                              className="mark-as"
+                              onClick={() => handleMarkAsClickKey(i,subItem.id)}
+                              style={{
+                                backgroundColor: subItem.important  ? "red" : "#d9d9d9"
+                              }}
+                            ></div>
                               </div>
                             </div>
                           </div>
