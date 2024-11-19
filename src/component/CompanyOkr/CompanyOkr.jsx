@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState,useRef } from "react";
 import "./CompanyOkr.css";
 import apiService from "../../ApiService/service";
 function CompanyOKR({ dropdownValue }) {
@@ -16,7 +16,16 @@ function CompanyOKR({ dropdownValue }) {
   const [logs] = useState([]);
   const [activeCommentIndex, setActiveCommentIndex] = useState(null);
   const [keyParent, setKeyParent] = useState([]);
+  const firstInputRef = useRef(null);
 
+  useEffect(() => {
+    if (isObj && firstInputRef.current) {
+      firstInputRef.current.focus();
+    }
+    if (isKey && firstInputRef.current) {
+      firstInputRef.current.focus();
+    }
+  }, [isObj,isKey]);
   useEffect(() => {
     KeyPercentFn();
     const userData = sessionStorage.getItem("userData");
@@ -314,7 +323,13 @@ function CompanyOKR({ dropdownValue }) {
     }));
     setIsKeybtn(false);
     setIsObjbtn(true);
+    setIsobj(false)
   };
+  const unfocusParentDiv =(event)=>{
+    event.stopPropagation();
+    setIsKeybtn(true);
+    setIsObjbtn(false);
+  }
   const [keyerrors, setKeyErrors] = useState({});
 
   const keyhandleChange = (e) => {
@@ -460,9 +475,10 @@ function CompanyOKR({ dropdownValue }) {
                 key={i}
                 className="w-100 d-inline-block mb-1 mt-1"
                 onClick={() => getParentObj(items.id)}
+                onBlur={(e)=>unfocusParentDiv(e)}
               >
                 <div class="accordion" id="accordionExample">
-                  <div class="accordion-item" tabindex={i}>
+                  <div class="accordion-item mb-2" tabindex={i}>
                     <div
                       tabindex={i}
                       class="collapsed ObjectDiv d-flex"
@@ -471,8 +487,17 @@ function CompanyOKR({ dropdownValue }) {
                       data-bs-target={`#accordionExample-${i}`}
                       aria-expanded="false"
                       aria-controls="collapseOne"
+                      style={{
+                        borderRadius: dropdownValue === "Detailed"
+                          && '6px 6px 0px 0px'
+                         
+                      }}
                     >
-                      <div className="ComObjpercent d-flex justify-content-center align-items-center">
+                      <div className="ComObjpercent d-flex justify-content-center align-items-center"  style={{
+                        borderRadius: dropdownValue === "Detailed"
+                          && '6px 0px 0px 0px'
+                         
+                      }}>
                         <p>{items.progress}%</p>
                       </div>
                       <div className="ComObjpercentTracker w-100 position-relative">
@@ -640,9 +665,10 @@ function CompanyOKR({ dropdownValue }) {
                         } ${dropdownValue === "Detailed" && "show"}`}
                         aria-labelledby="headingOne"
                         data-bs-parent="#accordionExample"
+                        onClick={(e) => unfocusParentDiv(e)}
                       >
                         <div
-                          class="accordion-body p0 m0 accordion-button"
+                          class="accordion-body p0 m0 accordion-button mb-2"
                           type="button"
                           data-bs-toggle="collapse"
                           data-bs-target={`#collapseIn${subIndex}`}
@@ -650,7 +676,13 @@ function CompanyOKR({ dropdownValue }) {
                           aria-controls="collapseOne"
                           onClick={() => objectiveWithKeyResult(subItem)}
                         >
-                          <div className="kr ComKeypercentTracker position-relative">
+                          <div className="kr ComKeypercentTracker position-relative" 
+                           style={{
+                            borderRadius: dropdownValue === "Detailed"
+                              && '6px 6px 0px 0px'
+                             
+                          }}
+                          >
                             {/* Progress bar fill */}
                             <div
                               className="progress-fill"
@@ -985,6 +1017,7 @@ function CompanyOKR({ dropdownValue }) {
                 name="objective_name"
                 className="form-control"
                 placeholder="Please Provide Your Objective"
+                ref={firstInputRef}
                 value={formData.objective_name}
                 onChange={handleChange}
               />
@@ -1080,6 +1113,7 @@ function CompanyOKR({ dropdownValue }) {
                 name="objective_name"
                 className="form-control"
                 placeholder="Please Provide Your Key Result"
+                ref={firstInputRef}
                 value={keyformData.objective_name}
                 onChange={keyhandleChange}
               />
