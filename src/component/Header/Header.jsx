@@ -108,8 +108,8 @@ export default function Header({ onDropdownChange }) {
     checked={selectedView === 'Detailed'}
     onChange={handleRadioChange}
     value="Detailed"
-    className="form-check-input custom-sizeCheckbox" type="radio" name="flexRadioDefault" id="flexRadioDefault1" />
-  <label className="form-check-label" for="flexRadioDefault1">
+    className="form-check-input custom-sizeCheckbox" type="radio" name="flexRadioDefault" id="flexRadioDefault2" />
+  <label className="form-check-label" for="flexRadioDefault2">
     Detailed
   </label>
     </li>
