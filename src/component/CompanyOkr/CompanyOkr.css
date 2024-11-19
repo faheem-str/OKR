@@ -246,6 +246,7 @@ p{
 .detailIcon{
   font-size: 12px;
   margin-right: 6px ;
+  cursor: pointer;
 }
 .keyDetailDiv{
   padding: 10px;
