@@ -147,9 +147,9 @@ function CompanyOKR({ dropdownValue }) {
       const response = await apiService.post(
         `objectives/update-objective-important/?objective_id=${id}`
       );
-      console.log('Successfully updated in backend');
+      console.log("Successfully updated in backend");
     } catch (error) {
-      console.error('API call failed:', error);
+      console.error("API call failed:", error);
     }
   };
   const handleMarkAsClickKey = async (index, id) => {
@@ -167,18 +167,17 @@ function CompanyOKR({ dropdownValue }) {
       const response = await apiService.post(
         `objectives/update-objective-important/?objective_id=${id}`
       );
-      console.log('Successfully updated in backend');
+      console.log("Successfully updated in backend");
     } catch (error) {
-      console.error('API call failed:', error);
+      console.error("API call failed:", error);
     }
   };
-  
 
   // create from
   const [formData, setFormData] = useState({
     objective_name: "",
     objective_details: "",
-    obj_period_type: "L - Learning",
+    obj_period_type: "",
     objective_type: "",
     user_id: parsedData.user_id ? parsedData.user_id : "",
     assigned_to_id: parsedData.user_id ? parsedData.user_id : "",
@@ -245,6 +244,7 @@ function CompanyOKR({ dropdownValue }) {
         if (response) {
           setIsobj(false);
           getCompanyOKRList(parsedData.user_id);
+         
         }
       } catch (error) {
         console.error("failed:", error);
@@ -254,6 +254,30 @@ function CompanyOKR({ dropdownValue }) {
   };
   const openFrom = () => {
     setIsobj((prev) => !prev);
+    setFormData({
+      objective_name: "",
+      objective_details: "",
+      obj_period_type: "",
+      objective_type: "",
+      user_id: parsedData.user_id ? parsedData.user_id : "",
+      assigned_to_id: parsedData.user_id ? parsedData.user_id : "",
+      year: 2024,
+      period: "Annual",
+      type: "Objective",
+      username: "",
+      progress: 0,
+      team: "Company OKR",
+      key_results: [],
+      who_map_id: parsedData.user_id ? parsedData.user_id : "",
+      whom_map_id: parsedData.user_id ? parsedData.user_id : "",
+      progress_type: "",
+      progress_description: "",
+      start_value: "",
+      parent_id: null,
+      end_value: "",
+      milestone_data: "",
+      assessment_freq: "",
+    })
   };
   const keyFrom = () => {
     setIsKey((prev) => !prev);
@@ -379,6 +403,30 @@ function CompanyOKR({ dropdownValue }) {
       day
     )} ${month}, ${year}, ${formattedHours}:${formattedMinutes} ${ampm}`;
   }
+  const handleDelete = (id) => {
+    setTimeout(() => {
+      objectiveDelete(id);
+    }, 100); // Delay of 100 milliseconds
+  };
+  const objectiveDelete = async (id) => {
+    const formData = new FormData();
+    formData.append("user_id", parsedData.user_id);
+    console.log(id, formData);
+    try {
+      const response = await apiService.delete(
+        `objectives/objectives_delete/${id}?user_id=${parsedData.user_id}`,
+        formData
+      );
+      if (response) {
+        // const modalElement = document.getElementById("exampleModal");
+        // const modalInstance = new window.bootstrap.Modal(modalElement);
+        // modalInstance.hide();
+        getCompanyOKRList(parsedData.user_id);
+      }
+    } catch (error) {
+      console.error("API call failed:", error);
+    }
+  };
   return (
     <div className="companyDiv">
       {companyOKRList &&
@@ -454,9 +502,11 @@ function CompanyOKR({ dropdownValue }) {
 
                             <div
                               className="mark-as"
-                              onClick={() => handleMarkAsClick(i,items.id)}
+                              onClick={() => handleMarkAsClick(i, items.id)}
                               style={{
-                                backgroundColor: items.important  ? "red" : "#d9d9d9"
+                                backgroundColor: items.important
+                                  ? "red"
+                                  : "#d9d9d9",
                               }}
                             ></div>
                           </div>
@@ -473,9 +523,60 @@ function CompanyOKR({ dropdownValue }) {
                               aria-hidden="true"
                             ></i>
                             <i
-                              class="fa fa-trash detailIcon"
+                              class="fa fa-trash detailIcon cursor-pointer"
                               aria-hidden="true"
+
+                              data-bs-toggle="modal"
+                              data-bs-target={`#exampleModal${i}`}
                             ></i>
+                            <div
+                              class="modal fade"
+                              id={`exampleModal${i}`}
+                              tabindex="-1"
+                              aria-labelledby="exampleModalLabel"
+                              aria-hidden="true"
+                            >
+                              <div class="modal-dialog">
+                                <div class="modal-content">
+                                  <div class="modal-header">
+                                    <h1
+                                      class="modal-title fs-5"
+                                      id="exampleModalLabel"
+                                    >
+                                      Confirmation
+                                    </h1>
+                                    <button
+                                      type="button"
+                                      class="btn-close"
+                                      data-bs-dismiss="modal"
+                                      aria-label="Close"
+                                    ></button>
+                                  </div>
+                                  <div class="modal-body">
+                                    Are you sure you want to delete this
+                                    objective?
+                                  </div>
+                                  <div class="modal-footer">
+                                    <button
+                                      type="button"
+                                      class="subBtn"
+                                      data-bs-dismiss="modal"
+                                    >
+                                      No
+                                    </button>
+                                    <button
+                                      onClick={()=>objectiveDelete(items.id)}
+                                      data-bs-dismiss="modal"
+                                      type="button"
+                                      class="subBtn"
+                                      
+                                    >
+                                      Yes
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                         <div className="w-100 d-flex justify-content-between align-items-center mt-3">
@@ -506,7 +607,6 @@ function CompanyOKR({ dropdownValue }) {
                       </div>
                     )}
                   </div>
-                 
 
                   {items.key_results &&
                     items.key_results.map((subItem, subIndex) => (
@@ -574,12 +674,16 @@ function CompanyOKR({ dropdownValue }) {
                                   </p>
                                 </div>
                                 <div
-                              className="mark-as"
-                              onClick={() => handleMarkAsClickKey(i,subItem.id)}
-                              style={{
-                                backgroundColor: subItem.important  ? "red" : "#d9d9d9"
-                              }}
-                            ></div>
+                                  className="mark-as"
+                                  onClick={() =>
+                                    handleMarkAsClickKey(i, subItem.id)
+                                  }
+                                  style={{
+                                    backgroundColor: subItem.important
+                                      ? "red"
+                                      : "#d9d9d9",
+                                  }}
+                                ></div>
                               </div>
                             </div>
                           </div>
@@ -598,8 +702,58 @@ function CompanyOKR({ dropdownValue }) {
                                 <i
                                   class="fa fa-trash detailIcon"
                                   aria-hidden="true"
+                                  data-bs-toggle="modal"
+                                  data-bs-target={`#exampleModalkey${i}`}
                                 ></i>
                               </div>
+                              <div
+                              class="modal fade"
+                              id={`exampleModalkey${i}`}
+                              tabindex="-1"
+                              aria-labelledby="exampleModalLabel"
+                              aria-hidden="true"
+                            >
+                              <div class="modal-dialog">
+                                <div class="modal-content">
+                                  <div class="modal-header">
+                                    <h1
+                                      class="modal-title fs-5"
+                                      id="exampleModalLabel"
+                                    >
+                                      Confirmation
+                                    </h1>
+                                    <button
+                                      type="button"
+                                      class="btn-close"
+                                      data-bs-dismiss="modal"
+                                      aria-label="Close"
+                                    ></button>
+                                  </div>
+                                  <div class="modal-body">
+                                    Are you sure you want to delete this
+                                    Key result?
+                                  </div>
+                                  <div class="modal-footer">
+                                    <button
+                                      type="button"
+                                      class="subBtn"
+                                      data-bs-dismiss="modal"
+                                    >
+                                      No
+                                    </button>
+                                    <button
+                                      onClick={()=>objectiveDelete(subItem.id)}
+                                      data-bs-dismiss="modal"
+                                      type="button"
+                                      class="subBtn"
+                                      
+                                    >
+                                      Yes
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                             </div>
                             <div className="w-100 d-flex justify-content-between align-items-center mt-3">
                               <p className="detailTitle">
@@ -847,6 +1001,7 @@ function CompanyOKR({ dropdownValue }) {
                 value={formData.obj_period_type}
                 onChange={handleChange}
               >
+                <option value="" disabled>Select Type</option>
                 <option value="L - Learning">L - Learning</option>
                 <option value="C - Committed">C - Committed</option>
                 <option value="A - Aspirational">A - Aspirational</option>
@@ -886,7 +1041,7 @@ function CompanyOKR({ dropdownValue }) {
           </form>
         </div>
       )}
-     {isKey && (
+      {isKey && (
         <div className=" mt-4">
           <form className="p-2 border rounded">
             <div className="mb-3 text-start">
