@@ -279,9 +279,7 @@ function CompanyOKR({ dropdownValue }) {
       assessment_freq: "",
     })
   };
-  const keyFrom = () => {
-    setIsKey((prev) => !prev);
-  };
+ 
 
   // key form
   const [keyformData, setKeyFormData] = useState({
@@ -308,6 +306,7 @@ function CompanyOKR({ dropdownValue }) {
     milestone_data: "",
     assessment_freq: "",
   });
+
   const getParentObj = (val) => {
     setKeyFormData((prevFormData) => ({
       ...prevFormData,
@@ -367,6 +366,35 @@ function CompanyOKR({ dropdownValue }) {
       console.log("Form submitted successfully", formData);
     }
   };
+  const keyFrom = () => {
+    setIsKey((prev) => !prev);
+    setKeyFormData(
+      {
+        objective_name: "",
+        objective_details: "",
+        obj_period_type: "",
+        objective_type: "",
+        user_id: parsedData.user_id ? parsedData.user_id : "",
+        assigned_to_id: parsedData.user_id ? parsedData.user_id : "",
+        year: 2024,
+        period: "Annual",
+        type: "Key",
+        username: "",
+        progress: 0,
+        team: "Company OKR",
+        key_results: [],
+        who_map_id: parsedData.user_id ? parsedData.user_id : "",
+        whom_map_id: parsedData.user_id ? parsedData.user_id : "",
+        progress_type: "",
+        progress_description: "",
+        start_value: "",
+        parent_id: 0,
+        end_value: "",
+        milestone_data: "",
+        assessment_freq: "",
+      }
+    )
+  };
   function formatDate(dateString) {
     const date = new Date(dateString);
 
@@ -403,11 +431,6 @@ function CompanyOKR({ dropdownValue }) {
       day
     )} ${month}, ${year}, ${formattedHours}:${formattedMinutes} ${ampm}`;
   }
-  const handleDelete = (id) => {
-    setTimeout(() => {
-      objectiveDelete(id);
-    }, 100); // Delay of 100 milliseconds
-  };
   const objectiveDelete = async (id) => {
     const formData = new FormData();
     formData.append("user_id", parsedData.user_id);
@@ -1098,6 +1121,7 @@ function CompanyOKR({ dropdownValue }) {
                 value={keyformData.obj_period_type}
                 onChange={keyhandleChange}
               >
+                <option value="" disabled>Select Type</option>
                 <option value="L - Learning">L - Learning</option>
                 <option value="C - Committed">C - Committed</option>
                 <option value="A - Aspirational">A - Aspirational</option>
