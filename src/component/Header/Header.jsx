@@ -2,7 +2,11 @@
 import React, { useEffect, useState,useMemo } from 'react'
 import './Header.css'
 import apiService from '../../ApiService/service'
+import { useNavigate } from 'react-router-dom';
+
 export default function Header({ onDropdownChange }) {
+  const navigate = useNavigate();
+
     const [data,setData]=useState('')
     const [viewOpen, setViewOpen] = useState(false);
     const [completionOpen, setCompletionOpen] = useState(false);
@@ -61,6 +65,11 @@ export default function Header({ onDropdownChange }) {
       setSelectedView(event.target.value); // Update selected view
       onDropdownChange(event.target.value)
     };
+    const logOut = ()=>{
+      sessionStorage.removeItem('authToken');
+      navigate('/login');
+
+    }
   return (
     <nav className="navbar p-2 px-3">
     <div className="m-0 d-flex w-100 m-0 justify-content-between align-items-center custom-height">
@@ -99,8 +108,8 @@ export default function Header({ onDropdownChange }) {
     checked={selectedView === 'Detailed'}
     onChange={handleRadioChange}
     value="Detailed"
-    className="form-check-input custom-sizeCheckbox" type="radio" name="flexRadioDefault" id="flexRadioDefault1" />
-  <label className="form-check-label" for="flexRadioDefault1">
+    className="form-check-input custom-sizeCheckbox" type="radio" name="flexRadioDefault" id="flexRadioDefault2" />
+  <label className="form-check-label" for="flexRadioDefault2">
     Detailed
   </label>
     </li>
@@ -311,7 +320,7 @@ export default function Header({ onDropdownChange }) {
         <p className='userName m-0 p-0 px-2 mr-2 text-dark'>
         {data.display_name}
       </p>
-        <a href="#" id="log_out" title="Logout"> <i className=" text-dark fa fa-sign-out"></i> </a>
+        <a id="log_out" title="Logout" onClick={logOut}> <i className=" text-dark fa fa-sign-out"></i> </a>
         </div>
     </div>
   </nav>

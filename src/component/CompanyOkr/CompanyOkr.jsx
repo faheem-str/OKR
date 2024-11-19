@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./CompanyOkr.css";
 import apiService from "../../ApiService/service";
-function CompanyOKR() {
+function CompanyOKR({ dropdownValue }) {
   const [backgroundColor, setBackgroundColor] = useState("");
   const [keyBackgroundColor, setKeyBackgroundColor] = useState("");
 
@@ -15,7 +15,13 @@ function CompanyOKR() {
   const [isObjbtn, setIsObjbtn] = useState(false);
   const [logs] = useState([]);
   const [activeCommentIndex, setActiveCommentIndex] = useState(null);
-  const [keyParent, setKeyParent] = useState([])
+  const [keyParent, setKeyParent] = useState([]);
+  const [expandedIndex, setExpandedIndex] = useState(null);
+  const [progress, setProgress] = useState(0);
+  const [updates, setUpdates] = useState([]);
+  const [progressKey, setProgressKey] = useState({ progress: 0});
+  const [previousProgress, setPreviousProgress] = useState(0); // Track previous progress
+
 
   useEffect(() => {
     KeyPercentFn();
@@ -24,10 +30,13 @@ function CompanyOKR() {
       setParsedData(JSON.parse(userData));
     }
   }, []);
+  useEffect(() => {
+    console.log(dropdownValue);
+  }, [dropdownValue]);
 
   useEffect(() => {
     if (parsedData && parsedData.user_id) {
-      console.log('parsedData', parsedData.user_id);
+      console.log("parsedData", parsedData.user_id);
       getCompanyOKRList(parsedData.user_id);
     }
     if (parsedData && parsedData.user_id) {
@@ -68,46 +77,81 @@ function CompanyOKR() {
     }
   };
   const [showInput, setShowInput] = useState(false);
-  const [commentText, setCommentText] = useState("");
+  const [commentText, setCommentText] = useState({});
   const [comments, setComments] = useState([]);
   const [viewMore, setViewMore] = useState(false);
 
   const handleAddCommentClick = (index) => {
+    console.log("Clicked comment index:", index);
     // setShowInput(true);
     // setActiveCommentIndex(activeCommentIndex === index ? null : index);
-    setActiveCommentIndex(index); 
+    setActiveCommentIndex(index);
+    // setActiveCommentIndex((prevIndex) => {
+    //   const newIndex = prevIndex === index ? null : index;
+    //   console.log("Updated activeCommentIndex:", newIndex);
+    //   return newIndex;
+    // });
   };
 
-  const handleViewMoreClick = () => {
-    setViewMore((prev) => !prev);
-    // setViewMore(!viewMore);
-    // if (!viewMore) {
-    //   setShowInput(false);
-    // }
+  const handleViewMoreClick = (index) => {
+    setExpandedIndex((prevIndex) => (prevIndex === index ? null : index));
   };
 
-  const handleCommentSubmit = ({ subItem }) => {
+  const handleCommentSubmit = async ({ subItem }) => {
     if (activeCommentIndex === null || !subItem || !subItem.logs) return;
+
+    const log = subItem.logs[activeCommentIndex];
+    const displayName = log?.display_name || "Unknown User";
+
     const newComments = [...comments];
     if (!newComments[activeCommentIndex]) {
       newComments[activeCommentIndex] = [];
     }
-    const log = subItem.logs[activeCommentIndex];
-    const displayName = log?.display_name || "Unknown User";
 
-    newComments[activeCommentIndex].push({
-      text: commentText,
-      modifiedOn: new Date().toLocaleString(),
+    const text = commentText[activeCommentIndex]?.trim();
+    if (!text) {
+      console.error("Comment text is empty.");
+      return;
+    }
+    const newComment = {
+      text,
+      modifiedOn: formatDate(log.created_at),
       commentedBy: displayName,
-    });
+    };
+    newComments[activeCommentIndex].push(newComment);
     setComments(newComments);
-    // setComments([...comments, newComments]);
-    // setComments((prev) => ({
-    //   ...prev,
-    //   [activeCommentIndex]: [...(prev[activeCommentIndex] || []), newComments],
-    // }));
+
+    const payload = {
+      message: text,
+      objective_log_id: log.log_id,
+      user_id: log.user_id,
+    };
+
+    try {
+      const postResponse = await apiService.post(
+        "objectives/comments",
+        payload
+      );
+      console.log("POST response---->", postResponse);
+
+      const getResponse = await apiService.get(
+        `objectives/objectives_with_key_results?user_id=${log.user_id}`
+      );
+      console.log("GET response---->", getResponse);
+
+      // Update the state with the new objectives data
+      setcompanyOKRList(getResponse.data);
+    } catch (error) {
+      console.log("Error occurred:", error);
+    }
+
+    // Reset the comment text and active comment index
     setCommentText("");
-    setActiveCommentIndex(null); //
+    setActiveCommentIndex(null);
+  };
+
+  const handleChangeCommentText = (index, text) => {
+    setCommentText((prev) => ({ ...prev, [index]: text }));
   };
 
   const getCompanyOKRList = async (id) => {
@@ -117,21 +161,51 @@ function CompanyOKR() {
       );
       console.log(response);
       setcompanyOKRList(response.data);
-
     } catch (error) {
       console.error("Login failed:", error);
     }
   };
 
-  const objectiveWithKeyResult = async (id, team) => {
+  const objectiveWithKeyResult = async (id) => {
     try {
-      const response = await apiService.get(`objectives/objectives_with_key_results_parent?user_id=${id.user_id}&parent_id=${id.id}&tName=${parsedData.department}`)
-      console.log(response)
-      setKeyParent(response.data)
-    } catch(error){
-    console.log(error)
+      const response = await apiService.get(
+        `objectives/objectives_with_key_results_parent?user_id=${id.user_id}&parent_id=${id.id}&tName=${parsedData.department}`
+      );
+      console.log(response);
+      setKeyParent(response.data);
+      setProgress(response.data.progress || 0);
+    } catch (error) {
+      console.log(error);
     }
-  }
+  };
+
+  const handleCheckIn = async (id) => {
+    try {
+      const response = await apiService.put("objectives/update_progress", {
+        user_id: id.user_id,
+        parent_id: id.id,
+        progress,
+      });
+      console.log("response", response);
+      const update = {
+        message: `Moved from 0 to ${progress}%`,
+        modifiedOn: new Date().toLocaleString(),
+        comment: comments || "No Comment",
+      };
+      setUpdates([...updates, update]); // Add new update to list
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    handleCheckIn();
+  }, []);
+
+  const updateProgress = (newProgress) => {
+    setPreviousProgress(progressKey.progress); 
+    setProgressKey({ progress: Number(newProgress) }); // Update the current progress
+  };
 
   const [markedRows, setMarkedRows] = useState({});
   const handleMarkAsClick = (index) => {
@@ -139,13 +213,47 @@ function CompanyOKR() {
       ...prevMarkedRows,
       [index]: !prevMarkedRows[index],
     }));
+  const handleMarkAsClick = async (index, id) => {
+    setcompanyOKRList((prevItems) =>
+      prevItems.map((item) =>
+        item.id === id ? { ...item, important: !item.important } : item
+      )
+    );
+    try {
+      const response = await apiService.post(
+        `objectives/update-objective-important/?objective_id=${id}`
+      );
+      console.log("Successfully updated in backend");
+    } catch (error) {
+      console.error("API call failed:", error);
+    }
+  };
+  const handleMarkAsClickKey = async (index, id) => {
+    setcompanyOKRList((prevItems) =>
+      prevItems.map((item) => ({
+        ...item, // Keep the parent item intact
+        key_results: item.key_results.map((subItem) =>
+          subItem.id === id
+            ? { ...subItem, important: !subItem.important } // Toggle the important flag of the subItem
+            : subItem
+        ),
+      }))
+    );
+    try {
+      const response = await apiService.post(
+        `objectives/update-objective-important/?objective_id=${id}`
+      );
+      console.log("Successfully updated in backend");
+    } catch (error) {
+      console.error("API call failed:", error);
+    }
   };
 
   // create from
   const [formData, setFormData] = useState({
     objective_name: "",
     objective_details: "",
-    obj_period_type: "L - Learning",
+    obj_period_type: "",
     objective_type: "",
     user_id: parsedData.user_id ? parsedData.user_id : "",
     assigned_to_id: parsedData.user_id ? parsedData.user_id : "",
@@ -212,6 +320,7 @@ function CompanyOKR() {
         if (response) {
           setIsobj(false);
           getCompanyOKRList(parsedData.user_id);
+         
         }
       } catch (error) {
         console.error("failed:", error);
@@ -221,10 +330,32 @@ function CompanyOKR() {
   };
   const openFrom = () => {
     setIsobj((prev) => !prev);
+    setFormData({
+      objective_name: "",
+      objective_details: "",
+      obj_period_type: "",
+      objective_type: "",
+      user_id: parsedData.user_id ? parsedData.user_id : "",
+      assigned_to_id: parsedData.user_id ? parsedData.user_id : "",
+      year: 2024,
+      period: "Annual",
+      type: "Objective",
+      username: "",
+      progress: 0,
+      team: "Company OKR",
+      key_results: [],
+      who_map_id: parsedData.user_id ? parsedData.user_id : "",
+      whom_map_id: parsedData.user_id ? parsedData.user_id : "",
+      progress_type: "",
+      progress_description: "",
+      start_value: "",
+      parent_id: null,
+      end_value: "",
+      milestone_data: "",
+      assessment_freq: "",
+    })
   };
-  const keyFrom = () => {
-    setIsKey((prev) => !prev);
-  };
+ 
 
   // key form
   const [keyformData, setKeyFormData] = useState({
@@ -251,6 +382,7 @@ function CompanyOKR() {
     milestone_data: "",
     assessment_freq: "",
   });
+
   const getParentObj = (val) => {
     setKeyFormData((prevFormData) => ({
       ...prevFormData,
@@ -310,6 +442,90 @@ function CompanyOKR() {
       console.log("Form submitted successfully", formData);
     }
   };
+  const keyFrom = () => {
+    setIsKey((prev) => !prev);
+    setKeyFormData(
+      {
+        objective_name: "",
+        objective_details: "",
+        obj_period_type: "",
+        objective_type: "",
+        user_id: parsedData.user_id ? parsedData.user_id : "",
+        assigned_to_id: parsedData.user_id ? parsedData.user_id : "",
+        year: 2024,
+        period: "Annual",
+        type: "Key",
+        username: "",
+        progress: 0,
+        team: "Company OKR",
+        key_results: [],
+        who_map_id: parsedData.user_id ? parsedData.user_id : "",
+        whom_map_id: parsedData.user_id ? parsedData.user_id : "",
+        progress_type: "",
+        progress_description: "",
+        start_value: "",
+        parent_id: 0,
+        end_value: "",
+        milestone_data: "",
+        assessment_freq: "",
+      }
+    )
+  };
+  function formatDate(dateString) {
+    const date = new Date(dateString);
+
+    // Extract date components
+    const day = date.getDate();
+    const month = date.toLocaleString("default", { month: "short" });
+    const year = date.getFullYear();
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+
+    // Format day with suffix
+    const daySuffix = (day) => {
+      if (day > 3 && day < 21) return "th"; // for 4th-20th
+      switch (day % 10) {
+        case 1:
+          return "st";
+        case 2:
+          return "nd";
+        case 3:
+          return "rd";
+        default:
+          return "th";
+      }
+    };
+
+    // Convert 24-hour time to 12-hour format
+    const formattedHours = hours % 12 || 12;
+    const ampm = hours >= 12 ? "PM" : "AM";
+
+    // Pad minutes with leading zero if needed
+    const formattedMinutes = minutes.toString().padStart(2, "0");
+
+    return `${day}${daySuffix(
+      day
+    )} ${month}, ${year}, ${formattedHours}:${formattedMinutes} ${ampm}`;
+  }
+  const objectiveDelete = async (id) => {
+    const formData = new FormData();
+    formData.append("user_id", parsedData.user_id);
+    console.log(id, formData);
+    try {
+      const response = await apiService.delete(
+        `objectives/objectives_delete/${id}?user_id=${parsedData.user_id}`,
+        formData
+      );
+      if (response) {
+        // const modalElement = document.getElementById("exampleModal");
+        // const modalInstance = new window.bootstrap.Modal(modalElement);
+        // modalInstance.hide();
+        getCompanyOKRList(parsedData.user_id);
+      }
+    } catch (error) {
+      console.error("API call failed:", error);
+    }
+  };
   return (
     <div className="companyDiv">
       {companyOKRList &&
@@ -358,16 +574,123 @@ function CompanyOKR() {
                         >
                           <p className="ComObjName">{items.objective_name}</p>
                           <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
+                            {dropdownValue !== "Detailed" && (
+                              <div
+                                className="ComTeamName d-flex justify-content-center align-items-center"
+                                title="Company OKR"
+                              >
+                                <p>CO</p>
+                              </div>
+                            )}
+                            {dropdownValue !== "Detailed" && (
+                              <div
+                                className="objtype-tag d-flex justify-content-center align-items-center"
+                                title={items.obj_period_type}
+                              >
+                                <p>
+                                  {items.obj_period_type === "A - Aspirational"
+                                    ? "A"
+                                    : items.obj_period_type === "L - Learning"
+                                    ? "L"
+                                    : items.obj_period_type === "C - Committed"
+                                    ? "C"
+                                    : null}
+                                </p>
+                              </div>
+                            )}
+
+                            <div
+                              className="mark-as"
+                              onClick={() => handleMarkAsClick(i, items.id)}
+                              style={{
+                                backgroundColor: items.important
+                                  ? "red"
+                                  : "#d9d9d9",
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {dropdownValue === "Detailed" && (
+                      <div className="w-100 detailDiv">
+                        <div className="w-100 d-flex justify-content-between align-items-center">
+                          <p className="detailTitle">{items.objective_name}</p>
+                          <div>
+                            <i
+                              class="fa fa-pencil detailIcon"
+                              aria-hidden="true"
+                            ></i>
+                            <i
+                              class="fa fa-trash detailIcon cursor-pointer"
+                              aria-hidden="true"
+
+                              data-bs-toggle="modal"
+                              data-bs-target={`#exampleModal${i}`}
+                            ></i>
+                            <div
+                              class="modal fade"
+                              id={`exampleModal${i}`}
+                              tabindex="-1"
+                              aria-labelledby="exampleModalLabel"
+                              aria-hidden="true"
+                            >
+                              <div class="modal-dialog">
+                                <div class="modal-content">
+                                  <div class="modal-header">
+                                    <h1
+                                      class="modal-title fs-5"
+                                      id="exampleModalLabel"
+                                    >
+                                      Confirmation
+                                    </h1>
+                                    <button
+                                      type="button"
+                                      class="btn-close"
+                                      data-bs-dismiss="modal"
+                                      aria-label="Close"
+                                    ></button>
+                                  </div>
+                                  <div class="modal-body">
+                                    Are you sure you want to delete this
+                                    objective?
+                                  </div>
+                                  <div class="modal-footer">
+                                    <button
+                                      type="button"
+                                      class="subBtn"
+                                      data-bs-dismiss="modal"
+                                    >
+                                      No
+                                    </button>
+                                    <button
+                                      onClick={()=>objectiveDelete(items.id)}
+                                      data-bs-dismiss="modal"
+                                      type="button"
+                                      class="subBtn"
+                                      
+                                    >
+                                      Yes
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="w-100 d-flex justify-content-between align-items-center mt-3">
+                          <p className="detailTitle">
+                            {formatDate(items.created_at)}{" "}
+                            <i class="fas fa-clock"></i>
+                          </p>
+                          <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
                             <div
                               className="ComTeamName d-flex justify-content-center align-items-center"
-                              title="Company OKR"
+                              title="Tooltip on top"
                             >
                               <p>CO</p>
                             </div>
-                            <div
-                              className="objtype-tag d-flex justify-content-center align-items-center"
-                              title={items.obj_period_type}
-                            >
+                            <div className="objtype-tag d-flex justify-content-center align-items-center">
                               <p>
                                 {items.obj_period_type === "A - Aspirational"
                                   ? "A"
@@ -378,233 +701,429 @@ function CompanyOKR() {
                                   : null}
                               </p>
                             </div>
-                            <div
-                              className="mark-as"
-                              onClick={() => handleMarkAsClick(i)}
-                              style={{
-                                backgroundColor: markedRows[i]
-                                  ? "red"
-                                  : "#d9d9d9",
-                              }}
-                            ></div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                    {items.key_results &&
-                      items.key_results.map((subItem, subIndex) => (
-                        <div
-                          id={`accordionExample-${i}`}
-                          className={`accordion-collapse collapse ${
-                            i === 0 && "show"
-                          }`}
-                          aria-labelledby="headingOne"
-                          data-bs-parent="#accordionExample"
-                        >
+                    )}
+                  </div>
+
+                  {items.key_results &&
+                    items.key_results.map(
+                      (subItem, subIndex) => (
+                        (
                           <div
-                            class="accordion-body p0 m0 accordion-button"
-                            type="button"
-                            data-bs-toggle="collapse"
-                            data-bs-target={`#collapseIn${subIndex}`}
-                            aria-expanded="false"
-                            aria-controls="collapseOne"
-                            onClick={()=>objectiveWithKeyResult(subItem)}
+                            id={`accordionExample-${i}`}
+                            className={`accordion-collapse collapse ${
+                              i === 0 && "show"
+                            } ${dropdownValue === "Detailed" && "show"}`}
+                            aria-labelledby="headingOne"
+                            data-bs-parent="#accordionExample"
                           >
-                            <div className="kr ComKeypercentTracker position-relative">
-                              {/* Progress bar fill */}
-                              <div
-                                className="progress-fill"
-                                style={{
-                                  width: `${subItem.progress}%`, // Dynamic width
-                                  backgroundColor: objPercentFn(
-                                    subItem.progress
-                                  ), // Dynamic color
-                                  height: "100%",
-                                  position: "absolute",
-                                  top: 0,
-                                  left: 0,
-                                  borderRadius: "0px 6px 6px 0px",
-                                  zIndex: 1,
-                                }}
-                              ></div>
-
-                              {/* Content inside the progress bar */}
-                              <div
-                                className="content-wrapper d-flex justify-content-between align-items-center w-100"
-                                style={{ position: "relative", zIndex: 2 }}
-                              >
-                                <p className="ComObjName m25">
-                                  {subItem.progress + "% "}
-                                  {subItem.objective_name}
-                                </p>
-                                <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
-                                  <div
-                                    className="ComTeamName d-flex justify-content-center align-items-center"
-                                    title="Tooltip on top"
-                                  >
-                                    <p>CO</p>
-                                  </div>
-                                  <div className="objtype-tag d-flex justify-content-center align-items-center">
-                                    <p>
-                                      {subItem.obj_period_type ===
-                                      "A - Aspirational"
-                                        ? "A"
-                                        : subItem.obj_period_type ===
-                                          "L - Learning"
-                                        ? "L"
-                                        : subItem.obj_period_type ===
-                                          "C - Committed"
-                                        ? "C"
-                                        : null}
-                                    </p>
-                                  </div>
-                                  <div className="mark-as"></div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          <div
-                            id={`collapseIn${subIndex}`}
-                            class="accordion-collapse collapse disIn text-start kr-dtl-title"
-                          >
-                            <p>{items.objective_name}</p>
-
-                            <div className="readmore-content">
-                              {items.objective_details}
-                            </div>
-                            <div className="p-3">
-                              {/* Progress Bar */}
-                              <div className="d-flex align-items-center mb-3">
+                            <div
+                              class="accordion-body p0 m0 accordion-button"
+                              type="button"
+                              data-bs-toggle="collapse"
+                              data-bs-target={`#collapseIn${subIndex}`}
+                              aria-expanded="false"
+                              aria-controls="collapseOne"
+                              onClick={() => objectiveWithKeyResult(subItem)}
+                            >
+                              <div className="kr ComKeypercentTracker position-relative">
+                                {/* Progress bar fill */}
                                 <div
-                                  className="progress flex-grow-1"
-                                  style={{ height: "6px", marginRight: "10px" }}
-                                >
-                                  <div
-                                    className="progress-bar bg-success"
-                                    role="progressbar"
-                                    style={{ width: `${items.progress}%` }}
-                                    aria-valuenow="66"
-                                    aria-valuemin="0"
-                                    aria-valuemax="100"
-                                  ></div>
-                                </div>
-                                <div
-                                  className="font-weight-bold"
-                                  style={{ minWidth: "25px" }}
-                                >
-                                  {items.progress}%
-                                </div>
-                              </div>
-
-                              {/* Timeline Content */}
-                              {viewMore && (
-                                <div className="comments-section">
-                                  {subItem.logs.map((log, index) => (
-                                    <div
-                                      key={index}
-                                      className="p-3 border rounded bg-light mb-3"
-                                    >
-                                      <p className="mb-1">
-                                        <strong>Update:</strong>{" "}
-                                        {`Moved from ${
-                                          log.old_progress || 0
-                                        }% to ${log.progress}%`}
-                                      </p>
-                                      <p className="mb-1">
-                                        <strong>Modified on:</strong>{" "}
-                                        {new Date(
-                                          log.action_timestamp
-                                        ).toLocaleString()}
-                                      </p>
-                                      <p className="mb-0">
-                                        <strong>Comments:</strong>{" "}
-                                        {log.notes_checkin || "No comments"}
-                                      </p>
-                                      <div className="mt-2">
-                                        <a
-                                          className="text-primary"
-                                          onClick={() =>
-                                            handleAddCommentClick(index)
-                                          }
-                                          style={{
-                                            cursor: "pointer",
-                                            textDecoration: "underline",
-                                          }}
-                                        >
-                                          Add Comment
-                                        </a>
-                                      </div>
-                                      {activeCommentIndex === index && (
-                                        <div className="mt-2">
-                                          <textarea
-                                            className="form-control"
-                                            rows="3"
-                                            placeholder="Add comments"
-                                            value={commentText}
-                                            onChange={(e) =>
-                                              setCommentText(e.target.value)
-                                            }
-                                          ></textarea>
-                                          <button
-                                            className="button-kr mt-2"
-                                            onClick={() =>
-                                              handleCommentSubmit({ subItem })
-                                            }
-                                            disabled={!commentText.trim()}
-                                          >
-                                            Submit
-                                          </button>
-                                        </div>
-                                      )}
-                                      {/* Display Comments */}
-                                      {comments[index] &&
-                                        comments[index].map(
-                                          (comment, commentIndex) => (
-                                            <div
-                                              key={commentIndex}
-                                              className="p-3 mt-3 rounded"
-                                              style={{
-                                                backgroundColor: "#3366ff",
-                                                color: "#fff",
-                                              }}
-                                            >
-                                              <p className="mb-1">
-                                                <strong>Comments:</strong>{" "}
-                                                {comment.text}
-                                              </p>
-                                              <p className="mb-1">
-                                                <strong>Modified on:</strong>{" "}
-                                                {comment.modifiedOn}
-                                              </p>
-                                              <p className="mb-0">
-                                                <strong>Commented By:</strong>{" "}
-                                                {comment.commentedBy}
-                                              </p>
-                                            </div>
-                                          )
-                                        )}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-
-                              <div className="mt-2">
-                                <a
-                                  className="text-primary"
+                                  className="progress-fill"
                                   style={{
-                                    cursor: "pointer",
-                                    textDecoration: "underline",
+                                    width: `${subItem.progress}%`, // Dynamic width
+                                    backgroundColor: objPercentFn(
+                                      subItem.progress
+                                    ), // Dynamic color
+                                    height: "100%",
+                                    position: "absolute",
+                                    top: 0,
+                                    left: 0,
+                                    borderRadius: "0px 6px 6px 0px",
+                                    zIndex: 1,
                                   }}
-                                  onClick={handleViewMoreClick}
+                                ></div>
+
+                                {/* Content inside the progress bar */}
+                                <div
+                                  className="content-wrapper d-flex justify-content-between align-items-center w-100"
+                                  style={{ position: "relative", zIndex: 2 }}
                                 >
-                                  {viewMore ? "View Less" : "View More"}
-                                </a>
+                                  <p className="ComObjName m25">
+                                    {subItem.progress + "% "}
+                                    {subItem.objective_name}
+                                  </p>
+                                  <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
+                                    <div
+                                      className="ComTeamName d-flex justify-content-center align-items-center"
+                                      title="Tooltip on top"
+                                    >
+                                      <p>CO</p>
+                                    </div>
+                                    <div className="objtype-tag d-flex justify-content-center align-items-center">
+                                      <p>
+                                        {subItem.obj_period_type ===
+                                        "A - Aspirational"
+                                          ? "A"
+                                          : subItem.obj_period_type ===
+                                            "L - Learning"
+                                          ? "L"
+                                          : subItem.obj_period_type ===
+                                            "C - Committed"
+                                          ? "C"
+                                          : null}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div
+                                  className="mark-as"
+                                  onClick={() =>
+                                    handleMarkAsClickKey(i, subItem.id)
+                                  }
+                                  style={{
+                                    backgroundColor: subItem.important
+                                      ? "red"
+                                      : "#d9d9d9",
+                                  }}
+                                ></div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      ))}
-                  </div>
+                        {dropdownValue === "Detailed" && (
+                          <div className="keyDetailDiv">
+                            <div className="w-100 d-flex justify-content-between align-items-center">
+                              <p className="detailTitle">
+                                {subItem.objective_name}
+                              </p>
+                              <div>
+                                <i
+                                  class="fa fa-pencil detailIcon"
+                                  aria-hidden="true"
+                                ></i>
+                                <i
+                                  class="fa fa-trash detailIcon"
+                                  aria-hidden="true"
+                                  data-bs-toggle="modal"
+                                  data-bs-target={`#exampleModalkey${i}`}
+                                ></i>
+                              </div>
+                              <div
+                              class="modal fade"
+                              id={`exampleModalkey${i}`}
+                              tabindex="-1"
+                              aria-labelledby="exampleModalLabel"
+                              aria-hidden="true"
+                            >
+                              <div class="modal-dialog">
+                                <div class="modal-content">
+                                  <div class="modal-header">
+                                    <h1
+                                      class="modal-title fs-5"
+                                      id="exampleModalLabel"
+                                    >
+                                      Confirmation
+                                    </h1>
+                                    <button
+                                      type="button"
+                                      class="btn-close"
+                                      data-bs-dismiss="modal"
+                                      aria-label="Close"
+                                    ></button>
+                                  </div>
+                                  <div class="modal-body">
+                                    Are you sure you want to delete this
+                                    Key result?
+                                  </div>
+                                  <div class="modal-footer">
+                                    <button
+                                      type="button"
+                                      class="subBtn"
+                                      data-bs-dismiss="modal"
+                                    >
+                                      No
+                                    </button>
+                                    <button
+                                      onClick={()=>objectiveDelete(subItem.id)}
+                                      data-bs-dismiss="modal"
+                                      type="button"
+                                      class="subBtn"
+                                      
+                                    >
+                                      Yes
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            </div>
+                            <div className="w-100 d-flex justify-content-between align-items-center mt-3">
+                              <p className="detailTitle">
+                                {formatDate(subItem.created_at)}{" "}
+                                <i class="fas fa-clock"></i>
+                              </p>
+                              <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
+                                <div
+                                  className="ComTeamName d-flex justify-content-center align-items-center"
+                                  title="Tooltip on top"
+                                >
+                                  <p>CO</p>
+                                </div>
+                                <div className="w-100 d-flex justify-content-between align-items-center mt-3">
+                                  <p className="detailTitle">
+                                    {formatDate(subItem.created_at)}{" "}
+                                    <i class="fas fa-clock"></i>
+                                  </p>
+                                  <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
+                                    <div
+                                      className="ComTeamName d-flex justify-content-center align-items-center"
+                                      title="Tooltip on top"
+                                    >
+                                      <p>CO</p>
+                                    </div>
+                                    <div className="objtype-tag d-flex justify-content-center align-items-center">
+                                      <p>
+                                        {subItem.obj_period_type ===
+                                        "A - Aspirational"
+                                          ? "A"
+                                          : subItem.obj_period_type ===
+                                            "L - Learning"
+                                          ? "L"
+                                          : subItem.obj_period_type ===
+                                            "C - Committed"
+                                          ? "C"
+                                          : null}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            <div
+                              id={`collapseIn${subIndex}`}
+                              class="accordion-collapse collapse disIn text-start kr-dtl-title"
+                            >
+                              <p>{items.objective_name}</p>
+                              <div className="readmore-content">
+                                {items.objective_details}
+                              </div>
+                              <div className="p-3">
+                                {/* Progress Bar */}
+                                <div className="d-flex align-items-center mb-3">
+                                  <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={progressKey.progress}
+                                    onChange={(e) =>
+                                      updateProgress(e.target.value)
+                                    }
+                                    className="form-range flex-grow-1"
+                                    style={{
+                                      height: "6px",
+                                      marginRight: "10px",
+                                      background: `linear-gradient(to right, #15E1A4 ${progressKey.progress}%, #fff ${progressKey.progress}%)`, 
+                                    }}
+                                  />
+
+                                  <div
+                                    className="progress-bar"
+                                    role="progressbar"
+                                    // style={{ backgroundColor: "#15E1A4",  height: "6px",}}
+                                    aria-valuenow={progressKey.progress}
+                                    aria-valuemin="0"
+                                    aria-valuemax="100"
+                                  ></div>
+
+                                  <div
+                                    className="font-weight-bold"
+                                    style={{ minWidth: "25px", marginLeft: "10px"  }}
+                                  >
+                                    {progressKey.progress}%
+                                  </div>
+                                </div>
+                                <div className="comment-section user">
+                                  <textarea
+                                    className="comment-textarea"
+                                    placeholder="Add Check-in comment"
+                                    value={comments}
+                                    onChange={(e) =>
+                                      setComments(e.target.value)
+                                    }
+                                  ></textarea>
+                                  <button
+                                    className="check-in-button user"
+                                    onClick={handleCheckIn}
+                                    // disabled="disabled"
+                                  >
+                                    Check-in
+                                  </button>
+                                </div>
+
+                                {/* Timeline Content */}
+
+                                <div className="comments-section">
+                                  {subItem.logs.map((log, index) => (
+                                    <div key={index} className="comment-item">
+                                      <div className="line-dot-wrapper">
+                                        <div className="dot"></div>
+                                        <div className="line"></div>
+                                      </div>
+                                      <div className="p-3 border rounded bg-light mb-3" id={`targetId-${index}`}>
+                                        <p className="mb-1">
+                                          <strong>Update:</strong>{" "}
+                                          {`Moved from ${
+                                            log.old_progress || 0
+                                          }% to ${log.progress}%`}
+                                        </p>
+                                        <p className="mb-1">
+                                          <strong>Modified on:</strong>{" "}
+                                          {formatDate(log.created_at)}
+                                        </p>
+                                        <p className="mb-0">
+                                          <strong>Comments:</strong>{" "}
+                                          {log.notes_checkin || "No comments"}
+                                        </p>
+                                             
+                                        <div className="mt-2" id={`targetId-${index}`} >
+                                          <a
+                                            className="text-primary"
+                                            onClick={() =>
+                                              handleAddCommentClick(index)
+                                            }
+                                            style={{
+                                              cursor: "pointer",
+                                              textDecoration: "underline",
+                                            }}
+                                          >
+                                            Add Comment
+                                          </a>
+                                        </div>
+                                        {activeCommentIndex === index && (
+                                          <div className="mt-2" data-bs-target={`#targetId-${index}`}>
+                                            <textarea
+                                              className="form-control"
+
+                                              rows="3"
+                                              placeholder="Add comments"
+                                              value={commentText[index] || ""}
+                                              onChange={(e) =>
+                                                handleChangeCommentText(
+                                                  index,
+                                                  e.target.value
+                                                )
+                                              }
+                                            ></textarea>
+                                            <button
+                                              className="button-kr mt-2"
+                                              onClick={() =>
+                                                handleCommentSubmit({
+                                                  subItem,
+                                                  commentText,
+                                                  index,
+                                                })
+                                              }
+                                              disabled={
+                                                !commentText[index]?.trim()
+                                              }
+                                            >
+                                              Submit
+                                            </button>
+                                          </div>
+                                        )}
+
+                                        {/* Display Comments */}
+                                        {expandedIndex === index && (
+                                          <div className="p-3 bg-light">
+                                            {/* Render additional details */}
+                                            {subItem.logs[index].comments &&
+                                              subItem.logs[index].comments.map(
+                                                (comment, commentIndex) => (
+                                                  console.log(
+                                                    "comments-->",
+                                                    comment
+                                                  ),
+                                                  (
+                                                    <div
+                                                      key={commentIndex}
+                                                      className="p-3 mt-3 rounded"
+                                                      style={{
+                                                        backgroundColor:
+                                                          "#3366ff",
+                                                        color: "#fff",
+                                                      }}
+                                                    >
+                                                      <p className="mb-1">
+                                                        <strong>
+                                                          Comments:
+                                                        </strong>{" "}
+                                                        {comment.message}
+                                                      </p>
+                                                      <p className="mb-1">
+                                                        <strong>
+                                                          Modified on:
+                                                        </strong>{" "}
+                                                        {formatDate(
+                                                          comment.created_at
+                                                        )}
+                                                      </p>
+                                                      <p className="mb-0">
+                                                        <strong>
+                                                          Commented By:
+                                                        </strong>{" "}
+                                                        {
+                                                          comment.user_display_name
+                                                        }
+                                                      </p>
+                                                    </div>
+                                                  )
+                                                )
+                                              )}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="view-content">
+                                        {expandedIndex === index ? (
+                                          <a
+                                            className="text-primary"
+                                            onClick={() =>
+                                              handleViewMoreClick(index)
+                                            }
+                                            style={{
+                                              cursor: "pointer",
+                                              textDecoration: "underline",
+                                            }}
+                                          >
+                                            View Less
+                                          </a>
+                                        ) : (
+                                          <a
+                                            className="text-primary"
+                                            onClick={() =>
+                                              handleViewMoreClick(index)
+                                            }
+                                            style={{
+                                              cursor: "pointer",
+                                              textDecoration: "underline",
+                                            }}
+                                          >
+                                            View More
+                                          </a>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      )
+                    )}
                 </div>
               </div>
             )
@@ -681,6 +1200,7 @@ function CompanyOKR() {
                 value={formData.obj_period_type}
                 onChange={handleChange}
               >
+                <option value="" disabled>Select Type</option>
                 <option value="L - Learning">L - Learning</option>
                 <option value="C - Committed">C - Committed</option>
                 <option value="A - Aspirational">A - Aspirational</option>
@@ -777,6 +1297,7 @@ function CompanyOKR() {
                 value={keyformData.obj_period_type}
                 onChange={keyhandleChange}
               >
+                <option value="" disabled>Select Type</option>
                 <option value="L - Learning">L - Learning</option>
                 <option value="C - Committed">C - Committed</option>
                 <option value="A - Aspirational">A - Aspirational</option>
