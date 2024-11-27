@@ -12,7 +12,7 @@ function CompanyOKR({ dropdownValue }) {
   const [activeCommentIndex, setActiveCommentIndex] = useState(null);
   const firstInputRef = useRef(null);
   const [isObjEdit,setIsObjEdit]=useState(false)
-
+  const [isLoader,setIsLoader]=useState( false)
   useEffect(() => {
     if (isObj && firstInputRef.current) {
       firstInputRef.current.focus();
@@ -107,12 +107,15 @@ function CompanyOKR({ dropdownValue }) {
   };
 
   const getCompanyOKRList = async (id) => {
+    setIsLoader(true)
     try {
       const response = await apiService.get(
         `objectives/objectives_with_key_results?user_id=${id}`
       );
       console.log(response);
       setcompanyOKRList(response.data);
+    setIsLoader(false)
+
     } catch (error) {
       console.error("Login failed:", error);
     }
@@ -482,7 +485,10 @@ function CompanyOKR({ dropdownValue }) {
   }
   return (
     <div className="companyDiv">
-      {companyOKRList &&
+      <>
+      {!isLoader ? 
+      <>
+       {companyOKRList &&
         companyOKRList.map(
           (items, i) =>
             items.type === "Objective" && (
@@ -999,6 +1005,16 @@ function CompanyOKR({ dropdownValue }) {
               </div>
             )
         )}
+      </> :
+      <>
+        <div className="w-100 loaderDiv">
+        <div className="loader"></div>
+        </div>
+      </>
+    }
+      </>
+     
+      
       <div className="btnDiv d-flex justify-content-between align-items-center w-100">
         <button
           disabled={isObjbtn}
