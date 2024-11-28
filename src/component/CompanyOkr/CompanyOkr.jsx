@@ -9,12 +9,28 @@ function CompanyOKR({ dropdownValue,makeCompact }) {
   const [isKey, setIsKey] = useState(false);
   const [isKeybtn, setIsKeybtn] = useState(true);
   const [isObjbtn, setIsObjbtn] = useState(false);
+  const [logs] = useState([]);
   const [activeCommentIndex, setActiveCommentIndex] = useState(null);
+  const [keyParent, setKeyParent] = useState([]);
+  const [expandedIndex, setExpandedIndex] = useState(null);
+  const [progress, setProgress] = useState(0);
+  const [updates, setUpdates] = useState([]);
+  const [progressKey, setProgressKey] = useState({ progress: 0 });
+  const [previousProgress, setPreviousProgress] = useState(0);
   const firstInputRef = useRef(null);
   const [isObjEdit,setIsObjEdit]=useState(false)
   const [isKeyResultEdit,setIsKeyResultEdit]=useState(false)
   const [isLoader,setIsLoader]=useState( false)
   const [parentID,setParentId]=useState()
+  const [showFullComments, setShowFullComments] = useState({});
+  const [oldProgress, setOldProgress] = useState(0);
+  const toggleComments = (index) => {
+    setShowFullComments((prev) => ({
+      ...prev,
+      [index]: !prev[index], // Toggle specific log's comment visibility
+    }));
+  };
+ 
   useEffect(() => {
     if (isObj && firstInputRef.current) {
       firstInputRef.current.focus();
@@ -66,46 +82,76 @@ function CompanyOKR({ dropdownValue,makeCompact }) {
       return "#CBFFD7";
     }
   };
-  const [commentText, setCommentText] = useState("");
+  const [showInput, setShowInput] = useState(false);
+  const [commentText, setCommentText] = useState({});
   const [comments, setComments] = useState([]);
   const [viewMore, setViewMore] = useState(false);
 
   const handleAddCommentClick = (index) => {
+    console.log("Clicked comment index:", index);
     // setShowInput(true);
     // setActiveCommentIndex(activeCommentIndex === index ? null : index);
     setActiveCommentIndex(index);
   };
 
-  const handleViewMoreClick = () => {
-    setViewMore((prev) => !prev);
-    // setViewMore(!viewMore);
-    // if (!viewMore) {
-    //   setShowInput(false);
-    // }
+  const handleViewMoreClick = (comments, index) => {
+    return showFullComments[index] ? comments : comments.slice(0, 1);
   };
 
-  const handleCommentSubmit = ({ subItem }) => {
+  const handleCommentSubmit = async ({ subItem }) => {
     if (activeCommentIndex === null || !subItem || !subItem.logs) return;
+
+    const log = subItem.logs[activeCommentIndex];
+    const displayName = log?.display_name || "Unknown User";
+
     const newComments = [...comments];
     if (!newComments[activeCommentIndex]) {
       newComments[activeCommentIndex] = [];
     }
-    const log = subItem.logs[activeCommentIndex];
-    const displayName = log?.display_name || "Unknown User";
 
-    newComments[activeCommentIndex].push({
-      text: commentText,
-      modifiedOn: new Date().toLocaleString(),
+    const text = commentText[activeCommentIndex]?.trim();
+    if (!text) {
+      console.error("Comment text is empty.");
+      return;
+    }
+    const newComment = {
+      text,
+      modifiedOn: formatDate(log.created_at),
       commentedBy: displayName,
-    });
+    };
+    newComments[activeCommentIndex].push(newComment);
     setComments(newComments);
-    // setComments([...comments, newComments]);
-    // setComments((prev) => ({
-    //   ...prev,
-    //   [activeCommentIndex]: [...(prev[activeCommentIndex] || []), newComments],
-    // }));
+
+    const payload = {
+      message: text,
+      objective_log_id: log.log_id,
+      user_id: log.user_id,
+    };
+
+    try {
+      const postResponse = await apiService.post(
+        "objectives/comments",
+        payload
+      );
+      console.log("POST response---->", postResponse);
+
+      const getResponse = await apiService.get(
+        `objectives/objectives_with_key_results?user_id=${log.user_id}`
+      );
+      console.log("GET response---->", getResponse);
+
+      // Update the state with the new objectives data
+      setcompanyOKRList(getResponse.data);
+    } catch (error) {
+      console.log("Error occurred:", error);
+    }
+
+    // Reset the comment text and active comment index
     setCommentText("");
-    setActiveCommentIndex(null); //
+    setActiveCommentIndex(null);
+  };
+  const handleChangeCommentText = (index, text) => {
+    setCommentText((prev) => ({ ...prev, [index]: text }));
   };
 
   const getCompanyOKRList = async (id) => {
@@ -129,10 +175,52 @@ function CompanyOKR({ dropdownValue,makeCompact }) {
         `objectives/objectives_with_key_results_parent?user_id=${id.user_id}&parent_id=${id.id}&tName=${parsedData.department}`
       );
       console.log(response);
+      setKeyParent(response.data);
+      setProgress(response.data.progress || 0);
     } catch (error) {
       console.log(error);
     }
   };
+  const handleCheckIn = async (subItem, progressKey, comments) => {
+    try {
+      const log = subItem.logs[0]; 
+      const objectiveId = log.objective_id;   
+      const team = subItem.team || "Company OKR";
+      console.log('objectiveId---', objectiveId)
+
+
+      const payload = {
+        user_id: parsedData.user_id,
+        objective_id: objectiveId, 
+        progress: progressKey.progress,
+        notes_checkin: comments || "No comment",
+        progress_type: "percentage",
+        team: team 
+      }
+      const response = await apiService.put("objectives/update_progress", payload);
+      // setUpdates(response)
+      console.log("response", response);
+      const update = {
+        message: `Moved from 0 to ${progressKey.progress}%`,
+        modifiedOn: new Date().toLocaleString(),
+        comment: comments || "No Comment",
+      };
+      setUpdates((prevUpdates) => [...prevUpdates, update]); 
+      setOldProgress(progressKey.progress);
+      setComments("");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  useEffect(() => {
+    handleCheckIn();
+  }, [progressKey, comments]);
+
+  const updateProgress = (newProgress) => {
+    setPreviousProgress(progressKey.progress);
+    setProgressKey({ progress: Number(newProgress) }); // Update the current progress
+  };
+  const [markedRows, setMarkedRows] = useState({});
 
   const handleMarkAsClick = async (index, id) => {
     setcompanyOKRList((prevItems) =>
@@ -936,143 +1024,217 @@ function CompanyOKR({ dropdownValue,makeCompact }) {
                           </div>
                         )}
 
-                        <div
-                          id={`collapseIn${subIndex}`}
-                          class="accordion-collapse collapse disIn text-start kr-dtl-title"
-                        >
-                          <p>{items.objective_name}</p>
-
-                          <div className="readmore-content">
-                            {items.objective_details}
-                          </div>
-                          <div className="p-3">
-                            
-                            <div className="d-flex align-items-center mb-3">
-                              <div
-                                className="progress flex-grow-1"
-                                style={{ height: "6px", marginRight: "10px" }}
+<div
+                                id={`collapseIn${subIndex}`}
+                                className="accordion-collapse collapse disIn text-start kr-dtl-title"
                               >
-                                <div
-                                  className="progress-bar bg-success"
-                                  role="progressbar"
-                                  style={{ width: `${items.progress}%` }}
-                                  aria-valuenow="66"
-                                  aria-valuemin="0"
-                                  aria-valuemax="100"
-                                ></div>
-                              </div>
-                              <div
-                                className="font-weight-bold"
-                                style={{ minWidth: "25px" }}
-                              >
-                                {items.progress}%
-                              </div>
-                            </div>
-
-                          
-                            {viewMore && (
-                              <div className="comments-section">
-                                {subItem.logs.map((log, index) => (
-                                  <div
-                                    key={index}
-                                    className="p-3 border rounded bg-light mb-3"
-                                  >
-                                    <p className="mb-1">
-                                      <strong>Update:</strong>{" "}
-                                      {`Moved from ${
-                                        log.old_progress || 0
-                                      }% to ${log.progress}%`}
-                                    </p>
-                                    <p className="mb-1">
-                                      <strong>Modified on:</strong>{" "}
-                                      {formatDate(log.created_at)}
-                                    </p>
-                                    <p className="mb-0">
-                                      <strong>Comments:</strong>{" "}
-                                      {log.notes_checkin || "No comments"}
-                                    </p>
-                                    <div className="mt-2">
-                                      <a
-                                        className="text-primary"
-                                        onClick={() =>
-                                          handleAddCommentClick(index)
-                                        }
-                                        style={{
-                                          cursor: "pointer",
-                                          textDecoration: "underline",
-                                        }}
-                                      >
-                                        Add Comment
-                                      </a>
+                                <p>{items.objective_name}</p>
+                                <div className="readmore-content">
+                                  {items.objective_details}
+                                </div>
+                                <div className="p-3">
+                                  <div className="d-flex align-items-center mb-3">
+                                    <input
+                                      type="range"
+                                      min="0"
+                                      max="100"
+                                      value={progressKey.progress}
+                                      onChange={(e) =>
+                                        updateProgress(e.target.value)
+                                      }
+                                      className="form-range flex-grow-1"
+                                      style={{
+                                        height: "6px",
+                                        marginRight: "10px",
+                                        background: `linear-gradient(to right, #15E1A4 ${progressKey.progress}%, #fff ${progressKey.progress}%)`,
+                                      }}
+                                    />
+                                    <div
+                                      className="font-weight-bold"
+                                      style={{
+                                        minWidth: "25px",
+                                        marginLeft: "10px",
+                                      }}
+                                    >
+                                      {progressKey.progress}%
                                     </div>
-                                    {activeCommentIndex === index && (
-                                      <div className="mt-2">
-                                        <textarea
-                                          className="form-control"
-                                          rows="3"
-                                          placeholder="Add comments"
-                                          value={commentText}
-                                          onChange={(e) =>
-                                            setCommentText(e.target.value)
-                                          }
-                                        ></textarea>
-                                        <button
-                                          className="button-kr mt-2"
-                                          onClick={() =>
-                                            handleCommentSubmit({ subItem })
-                                          }
-                                          disabled={!commentText.trim()}
-                                        >
-                                          Submit
-                                        </button>
-                                      </div>
-                                    )}
-                                   
-                                    {comments[index] &&
-                                      comments[index].map(
-                                        (comment, commentIndex) => (
-                                          <div
-                                            key={commentIndex}
-                                            className="p-3 mt-3 rounded"
-                                            style={{
-                                              backgroundColor: "#3366ff",
-                                              color: "#fff",
-                                            }}
-                                          >
-                                            <p className="mb-1">
-                                              <strong>Comments:</strong>{" "}
-                                              {comment.text}
-                                            </p>
-                                            <p className="mb-1">
-                                              <strong>Modified on:</strong>{" "}
-                                              {comment.modifiedOn}
-                                            </p>
-                                            <p className="mb-0">
-                                              <strong>Commented By:</strong>{" "}
-                                              {comment.commentedBy}
-                                            </p>
-                                          </div>
-                                        )
-                                      )}
                                   </div>
-                                ))}
-                              </div>
-                            )}
+                                 
+                                  <div className="comment-section user">
+                                    <textarea
+                                      className="comment-textarea"
+                                      placeholder="Add Check-in comment"
+                                      value={comments}
+                                      onChange={(e) =>
+                                        setComments(e.target.value)
+                                      }
+                                    ></textarea>
+                                    <button
+                                      className="check-in-button user"
+                                      onClick={() => handleCheckIn(subItem, progressKey, comments)}
+                                    >
+                                      Check-in
+                                    </button>
+                                  </div>
 
-                            <div className="mt-2">
-                              <a
-                                className="text-primary"
-                                style={{
-                                  cursor: "pointer",
-                                  textDecoration: "underline",
-                                }}
-                                onClick={handleViewMoreClick}
-                              >
-                                {viewMore ? "View Less" : "View More"}
-                              </a>
-                            </div>
-                          </div>
-                        </div>
+                                  <div className="comments-section">
+                                    {subItem.logs.map((log, index) => {
+                                      // Handle expanded comments
+                                      const isExpanded =
+                                        showFullComments[index];
+                                      const displayedComments = isExpanded
+                                        ? log.comments
+                                        : log.comments.slice(0, 1);
+                                        console.log('displayedComments----',displayedComments)
+
+                                      return (
+                                        <div
+                                          key={index}
+                                          className="comment-item"
+                                        >
+                                          <div className="line-dot-wrapper">
+                                            <div className="dot"></div>
+                                            <div
+                                              className="line"
+                                              // style={{
+                                              //   height: `${
+                                              //     log.comments.length * 50 + 50
+                                              //   }px`,
+                                              // }}
+                                            ></div>{" "}
+                                            {/* Adjust height dynamically */}
+                                          </div>
+
+                                          <div className="p-3 border rounded bg-light mb-3">
+                                            {/* Update Info */}
+                                              <p className="mb-1">
+                                                <strong>Update:</strong>{" "}
+                                                {`Moved from ${log.old_progress || 0}% to ${log.created_at}`}
+
+                                              </p>
+                                              <p className="mb-1">
+                                                <strong>Modified on:</strong>{" "}
+                                                {formatDate(log.created_at)}
+                                              </p>
+                                              <p className="mb-0">
+                                                <strong>comments:</strong>{" "}
+                                                {log.notes_checkin ||
+                                                  "No comments"}
+                                              </p>
+
+                                            {/* Add Comment Section */}
+                                            <div>
+                                              <a
+                                                className="text-primary"
+                                                onClick={() =>
+                                                  handleAddCommentClick(index)
+                                                }
+                                                style={{
+                                                  cursor: "pointer",
+                                                  textDecoration: "underline",
+                                                }}
+                                              >
+                                                Add Comment
+                                              </a>
+                                              {activeCommentIndex === index && (
+                                                <div className="mt-2">
+                                                  <textarea
+                                                    className="form-control"
+                                                    rows="3"
+                                                    placeholder="Add comments"
+                                                    value={
+                                                      commentText[index] || ""
+                                                    }
+                                                    onChange={(e) =>
+                                                      handleChangeCommentText(
+                                                        index,
+                                                        e.target.value
+                                                      )
+                                                    }
+                                                  ></textarea>
+                                                  <button
+                                                    className="btn btn-primary mt-2"
+                                                    onClick={() =>
+                                                      handleCommentSubmit({
+                                                        subItem,
+                                                        commentText,
+                                                        index,
+                                                      })
+                                                    }
+                                                    disabled={
+                                                      !commentText[
+                                                        index
+                                                      ]?.trim()
+                                                    }
+                                                  >
+                                                    Submit
+                                                  </button>
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            {/* Comments Section - Display all comments in a single container */}
+                                            <div className="comments-container">
+                                              {displayedComments.map(
+                                                (comment, commentIndex) => (
+                                                  <div
+                                                    key={commentIndex}
+                                                    className="comment"
+                                                    style={{
+                                                      backgroundColor:
+                                                        "#3366ff",
+                                                      color: "#fff",
+                                                      marginBottom: "10px",
+                                                      padding: "10px",
+                                                      borderRadius: "5px",
+                                                    }}
+                                                  >
+                                                    <p className="mb-1">
+                                                      <strong>Comment:</strong>{" "}
+                                                      {comment.message}
+                                                    </p>
+                                                    <p className="mb-1">
+                                                      <strong>
+                                                        Modified on:
+                                                      </strong>{" "}
+                                                      {formatDate(
+                                                        comment.created_at
+                                                      )}
+                                                    </p>
+                                                    <p className="mb-0">
+                                                      <strong>
+                                                        Commented By:
+                                                      </strong>{" "}
+                                                      {
+                                                        comment.user_display_name
+                                                      }
+                                                    </p>
+                                                  </div>
+                                                )
+                                              )}
+                                            </div>
+
+                                            {/* View More/Less Toggle */}
+                                           
+                                          </div>
+                                          {log.comments.length > 1 && (
+                                              <button
+                                                onClick={() =>
+                                                  toggleComments(index)
+                                                }
+                                                className="view-toggle-btn mt-2"
+                                              >
+                                                {isExpanded
+                                                  ? "View Less"
+                                                  : "View More"}
+                                              </button>
+                                            )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
                       </div>
                     ))}
                 </div>
