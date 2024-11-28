@@ -4,7 +4,7 @@ import './Header.css'
 import apiService from '../../ApiService/service'
 import { useNavigate } from 'react-router-dom';
 
-export default function Header({ onDropdownChange }) {
+export default function Header({ onDropdownChange,setsetValue }) {
   const navigate = useNavigate();
 
     const [data,setData]=useState('')
@@ -24,6 +24,13 @@ export default function Header({ onDropdownChange }) {
             console.log('User data:', JSON.parse(storedData));
         }
     }, []);
+    useEffect(() => {
+     if(setsetValue){
+      setSelectedView(setsetValue)
+      console.log('working')
+     }
+    }, [setsetValue])
+    
 
     // Memoizing the API call to prevent re-fetching groups on every render
     const getGroupName = useMemo(() => {

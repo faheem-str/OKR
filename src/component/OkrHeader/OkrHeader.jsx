@@ -12,9 +12,17 @@ function OKRHeader() {
     const handleDropdownChange = (value) => {
         setDropdownValue(value);
     };
+    const makeCompact = ()=>{
+       
+        handleDropdownChange('Compact')
+        setValue()
+    }
+    const setValue = ()=>{
+        return dropdownValue
+    }
     return (
         <div>
-            <Header onDropdownChange={handleDropdownChange} />
+            <Header onDropdownChange={handleDropdownChange} setValue={setValue} />
             <div className='inHeader'>
                 <div className='component'>
                     <div className="okr-header">
@@ -24,7 +32,7 @@ function OKRHeader() {
                         <div className='okr-separator'></div>
                     </div>
                     <div className='w-100'>
-                       <CompanyOKR dropdownValue={dropdownValue}/>
+                       <CompanyOKR dropdownValue={dropdownValue} makeCompact={makeCompact}/>
                     </div>
                 </div>
                 <div className='component'>

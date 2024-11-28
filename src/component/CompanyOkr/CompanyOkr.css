@@ -228,6 +228,7 @@ p{
     z-index: 99;
     color: #000;
     font-weight: bold;
+    height: 100%;
 }
 .m25{
   margin-left: 25px !important;
@@ -282,4 +283,7 @@ p{
   .expanded-content {
     margin-top: 15px;
   } 
+  .cursor-not-allowed{
+    cursor: not-allowed !important;
+  }
   

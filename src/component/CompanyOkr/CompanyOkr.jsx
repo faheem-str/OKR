@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import "./CompanyOkr.css";
 import apiService from "../../ApiService/service";
-function CompanyOKR({ dropdownValue }) {
+function CompanyOKR({ dropdownValue,makeCompact }) {
 
   const [parsedData, setParsedData] = useState({});
   const [companyOKRList, setcompanyOKRList] = useState([]);
@@ -12,7 +12,9 @@ function CompanyOKR({ dropdownValue }) {
   const [activeCommentIndex, setActiveCommentIndex] = useState(null);
   const firstInputRef = useRef(null);
   const [isObjEdit,setIsObjEdit]=useState(false)
+  const [isKeyResultEdit,setIsKeyResultEdit]=useState(false)
   const [isLoader,setIsLoader]=useState( false)
+  const [parentID,setParentId]=useState()
   useEffect(() => {
     if (isObj && firstInputRef.current) {
       firstInputRef.current.focus();
@@ -361,6 +363,7 @@ function CompanyOKR({ dropdownValue }) {
         );
         if (response) {
           setIsKey(false);
+          setParentId(keyformData.parent_id)
           getCompanyOKRList(parsedData.user_id);
         }
       } catch (error) {
@@ -371,7 +374,7 @@ function CompanyOKR({ dropdownValue }) {
   };
   const keyFrom = () => {
     setIsKey((prev) => !prev);
-    setFormData((prevData) => ({
+    setKeyFormData((prevData) => ({
       ...prevData,       
       objective_name: '',
       objective_details:'',
@@ -427,6 +430,7 @@ function CompanyOKR({ dropdownValue }) {
         // const modalElement = document.getElementById("exampleModal");
         // const modalInstance = new window.bootstrap.Modal(modalElement);
         // modalInstance.hide();
+        makeCompact()
         getCompanyOKRList(parsedData.user_id);
       }
     } catch (error) {
@@ -475,12 +479,65 @@ function CompanyOKR({ dropdownValue }) {
         );
         if (response) {
           setIsobj(false);
+          makeCompact()
           getCompanyOKRList(parsedData.user_id);
         }
       } catch (error) {
         console.error("failed:", error);
       }
       console.log("Form submitted successfully", formData);
+    }
+  }
+
+  const keyResultEdit = (data,event)=>{
+    event.stopPropagation();
+    console.log(data)
+    setKeyFormData((prevData) => {
+      const { parent_id, ...updatedData } = prevData;
+      return{
+        ...updatedData,       
+        id:data.id,
+        objective_name: data.objective_name,
+        objective_details:data.objective_details,
+        obj_period_type:data.obj_period_type,
+        objective_type: data.obj_period_type === "L - Learning"
+          ? "1"
+          : data.obj_period_type === "C - Committed"
+          ? "2"
+          : data.obj_period_type === "A - Aspirational"
+          ? "3"
+          : "",
+      }
+     
+    });
+    setIsKeyResultEdit(true)
+    setIsKey(true)
+  }
+
+  const handleKeyResultEdit = async (e)=>{
+    e.preventDefault();
+    let validationErrors = {};
+    if (!keyformData.objective_name) {
+      validationErrors.objective_name = "Please fill the input";
+    }
+    if (!keyformData.obj_period_type) {
+      validationErrors.obj_period_type = "Please select an option";
+    }
+    setKeyErrors(validationErrors);
+    if (Object.keys(validationErrors).length === 0) {
+      try {
+        const response = await apiService.put(
+          `objectives/objectives_update?user_id=${parsedData.user_id}`,
+          [keyformData]
+        );
+        if (response) {
+          setIsKey(false);
+          makeCompact()
+          getCompanyOKRList(parsedData.user_id);
+        }
+      } catch (error) {
+        console.error("failed:", error);
+      }
     }
   }
   return (
@@ -497,7 +554,7 @@ function CompanyOKR({ dropdownValue }) {
                 className="w-100 d-inline-block mb-1 mt-1"
                 onClick={() => getParentObj(items.id)}
               >
-                <div class="accordion" id="accordionExample">
+                <div class="accordion" id={`#accordionExample-${i}`}>
                   <div class="accordion-item mb-2" tabindex={i}>
                     <div
                       tabindex={i}
@@ -570,7 +627,7 @@ function CompanyOKR({ dropdownValue }) {
 
                             <div
                               className="mark-as"
-                              onClick={() => handleMarkAsClick(i, items.id)}
+                              onClick={ parsedData.user_id === items.user_id ? () => handleMarkAsClick(i, items.id) : null}
                               style={{
                                 backgroundColor: items.important
                                   ? "red"
@@ -586,7 +643,10 @@ function CompanyOKR({ dropdownValue }) {
                         <div className="w-100 d-flex justify-content-between align-items-center">
                           <p className="detailTitle">{items.objective_name}</p>
                           <div>
-                            <i
+                            {
+                              parsedData.user_id === items.user_id  ? 
+                              <>
+                               <i
                               class="fa fa-pencil detailIcon"
                               aria-hidden="true"
                               onClick={(e)=>objectiveEdit(items,e)}
@@ -596,7 +656,10 @@ function CompanyOKR({ dropdownValue }) {
                               aria-hidden="true"
                               data-bs-toggle="modal"
                               data-bs-target={`#exampleModal${i}`}
-                            ></i>
+                            ></i> 
+                              </> : null
+                            }
+                           
                             <div
                               class="modal fade"
                               id={`exampleModal${i}`}
@@ -679,9 +742,13 @@ function CompanyOKR({ dropdownValue }) {
                     items.key_results.map((subItem, subIndex) => (
                       <div
                         id={`accordionExample-${i}`}
-                        className={`accordion-collapse collapse ${
-                          i === 0 && "show"
-                        } ${dropdownValue === "Detailed" && "show"}`}
+                        className={`accordion-collapse collapse
+                         ${i === 0 && "show"} 
+                         ${dropdownValue === "Detailed" && "show"}
+                           ${parentID === items.id && "show"}
+                         `
+                        
+                      }
                         aria-labelledby="headingOne"
                         data-bs-parent="#accordionExample"
                         onClick={(e) => unfocusParentDiv(e)}
@@ -750,8 +817,8 @@ function CompanyOKR({ dropdownValue }) {
                                 </div>
                                 <div
                                   className="mark-as"
-                                  onClick={() =>
-                                    handleMarkAsClickKey(i, subItem.id)
+                                  onClick={ parsedData.user_id === items.user_id ? () =>
+                                    handleMarkAsClickKey(i, subItem.id) : null
                                   }
                                   style={{
                                     backgroundColor: subItem.important
@@ -770,9 +837,13 @@ function CompanyOKR({ dropdownValue }) {
                                 {subItem.objective_name}
                               </p>
                               <div>
-                                <i
+                                {
+                                   parsedData.user_id === subItem.user_id ?
+                                  <>
+                                  <i
                                   class="fa fa-pencil detailIcon"
                                   aria-hidden="true"
+                                  onClick={(e)=>keyResultEdit(subItem,e)}
                                 ></i>
                                 <i
                                   class="fa fa-trash detailIcon"
@@ -780,6 +851,9 @@ function CompanyOKR({ dropdownValue }) {
                                   data-bs-toggle="modal"
                                   data-bs-target={`#exampleModalkey${i}`}
                                 ></i>
+                                  </> : null
+                                }
+                                
                               </div>
                               <div
                                 class="modal fade"
@@ -1018,15 +1092,15 @@ function CompanyOKR({ dropdownValue }) {
       <div className="btnDiv d-flex justify-content-between align-items-center w-100">
         <button
           disabled={isObjbtn}
-          style={{ opacity: isObjbtn && 0.6 }}
-          onClick={openFrom}
+          style={{ opacity: isObjbtn && 0.6,cursor:  parsedData.user_id != 207 && 'not-allowed'}}
+          onClick={parsedData.user_id === 207 ? openFrom : null}
         >
           Create Objective
         </button>
         <button
-          onClick={keyFrom}
+          onClick={parsedData.user_id === 207 ? keyFrom : null}
           disabled={isKeybtn}
-          style={{ opacity: isKeybtn && 0.6 }}
+          style={{ opacity: isKeybtn && 0.6,cursor:  parsedData.user_id != 207 && 'not-allowed' }}
         >
           Create Key Result
         </button>
@@ -1228,9 +1302,9 @@ function CompanyOKR({ dropdownValue }) {
               <button
                 type="submit"
                 className="subBtn"
-                onClick={keyhandleSubmit}
+                onClick={isKeyResultEdit ? handleKeyResultEdit: keyhandleSubmit}
               >
-                Submit
+                {isKeyResultEdit ? 'Update' : 'Submit'}
               </button>
             </div>
           </form>
