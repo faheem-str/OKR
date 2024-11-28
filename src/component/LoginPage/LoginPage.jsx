@@ -23,12 +23,12 @@ const Login = () => {
     return password.length >= 4;
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setCredentials({
-      ...credentials,
-      [name]: value,
-    });
+    const handleInputChange = (e) => {
+      const { name, value } = e.target;
+      setCredentials({
+        ...credentials,
+        [name]: value,
+      });
 
     // Clear error when the user starts typing
     setErrors({

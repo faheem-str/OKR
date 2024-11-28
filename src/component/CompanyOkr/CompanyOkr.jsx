@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "./CompanyOkr.css";
 import apiService from "../../ApiService/service";
 function CompanyOKR({ dropdownValue }) {
@@ -19,9 +19,34 @@ function CompanyOKR({ dropdownValue }) {
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [progress, setProgress] = useState(0);
   const [updates, setUpdates] = useState([]);
-  const [progressKey, setProgressKey] = useState({ progress: 0});
-  const [previousProgress, setPreviousProgress] = useState(0); // Track previous progress
+  const [progressKey, setProgressKey] = useState({ progress: 0 });
+  const [previousProgress, setPreviousProgress] = useState(0);
+  const firstInputRef = useRef(null);
+  const [isObjEdit, setIsObjEdit] = useState(false);
+  const [isLoader, setIsLoader] = useState(false);
 
+  const [showFullComments, setShowFullComments] = useState({});
+  const [oldProgress, setOldProgress] = useState(0);
+
+  const toggleComments = (index) => {
+    setShowFullComments((prev) => ({
+      ...prev,
+      [index]: !prev[index], // Toggle specific log's comment visibility
+    }));
+  };
+
+  const handleViewMoreClick = (comments, index) => {
+    return showFullComments[index] ? comments : comments.slice(0, 1);
+  };
+
+  useEffect(() => {
+    if (isObj && firstInputRef.current) {
+      firstInputRef.current.focus();
+    }
+    if (isKey && firstInputRef.current) {
+      firstInputRef.current.focus();
+    }
+  }, [isObj, isKey]);
 
   useEffect(() => {
     KeyPercentFn();
@@ -93,10 +118,6 @@ function CompanyOKR({ dropdownValue }) {
     // });
   };
 
-  const handleViewMoreClick = (index) => {
-    setExpandedIndex((prevIndex) => (prevIndex === index ? null : index));
-  };
-
   const handleCommentSubmit = async ({ subItem }) => {
     if (activeCommentIndex === null || !subItem || !subItem.logs) return;
 
@@ -155,12 +176,14 @@ function CompanyOKR({ dropdownValue }) {
   };
 
   const getCompanyOKRList = async (id) => {
+    setIsLoader(true);
     try {
       const response = await apiService.get(
         `objectives/objectives_with_key_results?user_id=${id}`
       );
       console.log(response);
       setcompanyOKRList(response.data);
+      setIsLoader(false);
     } catch (error) {
       console.error("Login failed:", error);
     }
@@ -179,20 +202,33 @@ function CompanyOKR({ dropdownValue }) {
     }
   };
 
-  const handleCheckIn = async (id) => {
+  const handleCheckIn = async (subItem, progressKey, comments) => {
     try {
-      const response = await apiService.put("objectives/update_progress", {
-        user_id: id.user_id,
-        parent_id: id.id,
-        progress,
-      });
+      const log = subItem.logs[0]; 
+      const objectiveId = log.objective_id;   
+      const team = subItem.team || "Company OKR";
+      console.log('objectiveId---', objectiveId)
+
+
+      const payload = {
+        user_id: parsedData.user_id,
+        objective_id: objectiveId, 
+        progress: progressKey.progress,
+        notes_checkin: comments || "No comment",
+        progress_type: "percentage",
+        team: team 
+      }
+      const response = await apiService.put("objectives/update_progress", payload);
+      // setUpdates(response)
       console.log("response", response);
       const update = {
-        message: `Moved from 0 to ${progress}%`,
+        message: `Moved from 0 to ${progressKey.progress}%`,
         modifiedOn: new Date().toLocaleString(),
         comment: comments || "No Comment",
       };
-      setUpdates([...updates, update]); // Add new update to list
+      setUpdates((prevUpdates) => [...prevUpdates, update]); 
+      setOldProgress(progressKey.progress);
+      setComments("");
     } catch (error) {
       console.log(error);
     }
@@ -200,19 +236,14 @@ function CompanyOKR({ dropdownValue }) {
 
   useEffect(() => {
     handleCheckIn();
-  }, []);
+  }, [progressKey, comments]);
 
   const updateProgress = (newProgress) => {
-    setPreviousProgress(progressKey.progress); 
+    setPreviousProgress(progressKey.progress);
     setProgressKey({ progress: Number(newProgress) }); // Update the current progress
   };
 
   const [markedRows, setMarkedRows] = useState({});
-  const handleMarkAsClick = (index) => {
-    setMarkedRows((prevMarkedRows) => ({
-      ...prevMarkedRows,
-      [index]: !prevMarkedRows[index],
-    }));
   const handleMarkAsClick = async (index, id) => {
     setcompanyOKRList((prevItems) =>
       prevItems.map((item) =>
@@ -320,7 +351,6 @@ function CompanyOKR({ dropdownValue }) {
         if (response) {
           setIsobj(false);
           getCompanyOKRList(parsedData.user_id);
-         
         }
       } catch (error) {
         console.error("failed:", error);
@@ -353,9 +383,8 @@ function CompanyOKR({ dropdownValue }) {
       end_value: "",
       milestone_data: "",
       assessment_freq: "",
-    })
+    });
   };
- 
 
   // key form
   const [keyformData, setKeyFormData] = useState({
@@ -444,32 +473,12 @@ function CompanyOKR({ dropdownValue }) {
   };
   const keyFrom = () => {
     setIsKey((prev) => !prev);
-    setKeyFormData(
-      {
-        objective_name: "",
-        objective_details: "",
-        obj_period_type: "",
-        objective_type: "",
-        user_id: parsedData.user_id ? parsedData.user_id : "",
-        assigned_to_id: parsedData.user_id ? parsedData.user_id : "",
-        year: 2024,
-        period: "Annual",
-        type: "Key",
-        username: "",
-        progress: 0,
-        team: "Company OKR",
-        key_results: [],
-        who_map_id: parsedData.user_id ? parsedData.user_id : "",
-        whom_map_id: parsedData.user_id ? parsedData.user_id : "",
-        progress_type: "",
-        progress_description: "",
-        start_value: "",
-        parent_id: 0,
-        end_value: "",
-        milestone_data: "",
-        assessment_freq: "",
-      }
-    )
+    setFormData((prevData) => ({
+      ...prevData,
+      objective_name: "",
+      objective_details: "",
+      obj_period_type: "",
+    }));
   };
   function formatDate(dateString) {
     const date = new Date(dateString);
@@ -526,355 +535,236 @@ function CompanyOKR({ dropdownValue }) {
       console.error("API call failed:", error);
     }
   };
+
+  const objectiveEdit = (data, event) => {
+    // setIsobj((prev) => !prev);
+    event.stopPropagation();
+
+    console.log(data);
+    setFormData((prevData) => ({
+      ...prevData,
+      id: data.id,
+      objective_name: data.objective_name,
+      objective_details: data.objective_details,
+      obj_period_type: data.obj_period_type,
+      objective_type:
+        data.obj_period_type === "L - Learning"
+          ? "1"
+          : data.obj_period_type === "C - Committed"
+          ? "2"
+          : data.obj_period_type === "A - Aspirational"
+          ? "3"
+          : "",
+    }));
+    setIsObjEdit(true);
+    setIsobj(true);
+  };
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    let validationErrors = {};
+    if (!formData.objective_name) {
+      validationErrors.objective_name = "Please fill the input";
+    }
+    if (!formData.obj_period_type) {
+      validationErrors.obj_period_type = "Please select an option";
+    }
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length === 0) {
+      try {
+        const response = await apiService.put(
+          `objectives/objectives_update?user_id=${parsedData.user_id}`,
+          [formData]
+        );
+        if (response) {
+          setIsobj(false);
+          getCompanyOKRList(parsedData.user_id);
+        }
+      } catch (error) {
+        console.error("failed:", error);
+      }
+      console.log("Form submitted successfully", formData);
+    }
+  };
   return (
     <div className="companyDiv">
-      {companyOKRList &&
-        companyOKRList.map(
-          (items, i) =>
-            items.type === "Objective" && (
-              <div
-                key={i}
-                className="w-100 d-inline-block mb-1 mt-1"
-                onClick={() => getParentObj(items.id)}
-              >
-                <div class="accordion" id="accordionExample">
-                  <div class="accordion-item" tabindex={i}>
+      <>
+        {!isLoader ? (
+          <>
+            {companyOKRList &&
+              companyOKRList.map(
+                (items, i) =>
+                  items.type === "Objective" && (
                     <div
-                      tabindex={i}
-                      class="collapsed ObjectDiv d-flex"
-                      type="button"
-                      data-bs-toggle="collapse"
-                      data-bs-target={`#accordionExample-${i}`}
-                      aria-expanded="false"
-                      aria-controls="collapseOne"
+                      key={i}
+                      className="w-100 d-inline-block mb-1 mt-1"
+                      onClick={() => getParentObj(items.id)}
                     >
-                      <div className="ComObjpercent d-flex justify-content-center align-items-center">
-                        <p>{items.progress}%</p>
-                      </div>
-                      <div className="ComObjpercentTracker w-100 position-relative">
-                        {/* Progress bar fill */}
-                        <div
-                          className="progress-fill"
-                          style={{
-                            width: `${items.progress}%`, // Dynamic width
-                            backgroundColor: objPercentFn(items.progress), // Dynamic color
-                            height: "100%",
-                            position: "absolute",
-                            top: 0,
-                            left: 0,
-                            borderRadius: "0px 6px 6px 0px",
-                            zIndex: 1,
-                          }}
-                        ></div>
-
-                        {/* Content inside the progress bar */}
-                        <div
-                          className="content-wrapper d-flex justify-content-between align-items-center w-100"
-                          style={{ position: "relative", zIndex: 2 }}
-                        >
-                          <p className="ComObjName">{items.objective_name}</p>
-                          <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
-                            {dropdownValue !== "Detailed" && (
-                              <div
-                                className="ComTeamName d-flex justify-content-center align-items-center"
-                                title="Company OKR"
-                              >
-                                <p>CO</p>
-                              </div>
-                            )}
-                            {dropdownValue !== "Detailed" && (
-                              <div
-                                className="objtype-tag d-flex justify-content-center align-items-center"
-                                title={items.obj_period_type}
-                              >
-                                <p>
-                                  {items.obj_period_type === "A - Aspirational"
-                                    ? "A"
-                                    : items.obj_period_type === "L - Learning"
-                                    ? "L"
-                                    : items.obj_period_type === "C - Committed"
-                                    ? "C"
-                                    : null}
-                                </p>
-                              </div>
-                            )}
-
-                            <div
-                              className="mark-as"
-                              onClick={() => handleMarkAsClick(i, items.id)}
-                              style={{
-                                backgroundColor: items.important
-                                  ? "red"
-                                  : "#d9d9d9",
-                              }}
-                            ></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    {dropdownValue === "Detailed" && (
-                      <div className="w-100 detailDiv">
-                        <div className="w-100 d-flex justify-content-between align-items-center">
-                          <p className="detailTitle">{items.objective_name}</p>
-                          <div>
-                            <i
-                              class="fa fa-pencil detailIcon"
-                              aria-hidden="true"
-                            ></i>
-                            <i
-                              class="fa fa-trash detailIcon cursor-pointer"
-                              aria-hidden="true"
-
-                              data-bs-toggle="modal"
-                              data-bs-target={`#exampleModal${i}`}
-                            ></i>
-                            <div
-                              class="modal fade"
-                              id={`exampleModal${i}`}
-                              tabindex="-1"
-                              aria-labelledby="exampleModalLabel"
-                              aria-hidden="true"
-                            >
-                              <div class="modal-dialog">
-                                <div class="modal-content">
-                                  <div class="modal-header">
-                                    <h1
-                                      class="modal-title fs-5"
-                                      id="exampleModalLabel"
-                                    >
-                                      Confirmation
-                                    </h1>
-                                    <button
-                                      type="button"
-                                      class="btn-close"
-                                      data-bs-dismiss="modal"
-                                      aria-label="Close"
-                                    ></button>
-                                  </div>
-                                  <div class="modal-body">
-                                    Are you sure you want to delete this
-                                    objective?
-                                  </div>
-                                  <div class="modal-footer">
-                                    <button
-                                      type="button"
-                                      class="subBtn"
-                                      data-bs-dismiss="modal"
-                                    >
-                                      No
-                                    </button>
-                                    <button
-                                      onClick={()=>objectiveDelete(items.id)}
-                                      data-bs-dismiss="modal"
-                                      type="button"
-                                      class="subBtn"
-                                      
-                                    >
-                                      Yes
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="w-100 d-flex justify-content-between align-items-center mt-3">
-                          <p className="detailTitle">
-                            {formatDate(items.created_at)}{" "}
-                            <i class="fas fa-clock"></i>
-                          </p>
-                          <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
-                            <div
-                              className="ComTeamName d-flex justify-content-center align-items-center"
-                              title="Tooltip on top"
-                            >
-                              <p>CO</p>
-                            </div>
-                            <div className="objtype-tag d-flex justify-content-center align-items-center">
-                              <p>
-                                {items.obj_period_type === "A - Aspirational"
-                                  ? "A"
-                                  : items.obj_period_type === "L - Learning"
-                                  ? "L"
-                                  : items.obj_period_type === "C - Committed"
-                                  ? "C"
-                                  : null}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {items.key_results &&
-                    items.key_results.map(
-                      (subItem, subIndex) => (
-                        (
+                      <div className="accordion" id="accordionExample">
+                        <div className="accordion-item mb-2" tabIndex={i}>
                           <div
-                            id={`accordionExample-${i}`}
-                            className={`accordion-collapse collapse ${
-                              i === 0 && "show"
-                            } ${dropdownValue === "Detailed" && "show"}`}
-                            aria-labelledby="headingOne"
-                            data-bs-parent="#accordionExample"
+                            tabIndex={i}
+                            className="collapsed ObjectDiv d-flex"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target={`#accordionExample-${i}`}
+                            aria-expanded="false"
+                            aria-controls="collapseOne"
+                            style={{
+                              borderRadius:
+                                dropdownValue === "Detailed" &&
+                                "6px 6px 0px 0px",
+                            }}
                           >
                             <div
-                              class="accordion-body p0 m0 accordion-button"
-                              type="button"
-                              data-bs-toggle="collapse"
-                              data-bs-target={`#collapseIn${subIndex}`}
-                              aria-expanded="false"
-                              aria-controls="collapseOne"
-                              onClick={() => objectiveWithKeyResult(subItem)}
+                              className="ComObjpercent d-flex justify-content-center align-items-center"
+                              style={{
+                                borderRadius:
+                                  dropdownValue === "Detailed" &&
+                                  "6px 0px 0px 0px",
+                              }}
                             >
-                              <div className="kr ComKeypercentTracker position-relative">
-                                {/* Progress bar fill */}
-                                <div
-                                  className="progress-fill"
-                                  style={{
-                                    width: `${subItem.progress}%`, // Dynamic width
-                                    backgroundColor: objPercentFn(
-                                      subItem.progress
-                                    ), // Dynamic color
-                                    height: "100%",
-                                    position: "absolute",
-                                    top: 0,
-                                    left: 0,
-                                    borderRadius: "0px 6px 6px 0px",
-                                    zIndex: 1,
-                                  }}
-                                ></div>
+                              <p>{items.progress}%</p>
+                            </div>
+                            <div className="ComObjpercentTracker w-100 position-relative">
+                              <div
+                                className="progress-fill"
+                                style={{
+                                  width: `${items.progress}%`,
+                                  backgroundColor: objPercentFn(items.progress),
+                                  height: "100%",
+                                  position: "absolute",
+                                  top: 0,
+                                  left: 0,
+                                  borderRadius: "0px 6px 6px 0px",
+                                  zIndex: 1,
+                                }}
+                              ></div>
 
-                                {/* Content inside the progress bar */}
-                                <div
-                                  className="content-wrapper d-flex justify-content-between align-items-center w-100"
-                                  style={{ position: "relative", zIndex: 2 }}
-                                >
-                                  <p className="ComObjName m25">
-                                    {subItem.progress + "% "}
-                                    {subItem.objective_name}
-                                  </p>
-                                  <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
+                              <div
+                                className="content-wrapper d-flex justify-content-between align-items-center w-100"
+                                style={{ position: "relative", zIndex: 2 }}
+                              >
+                                <p className="ComObjName">
+                                  {items.objective_name}
+                                </p>
+                                <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
+                                  {dropdownValue !== "Detailed" && (
                                     <div
                                       className="ComTeamName d-flex justify-content-center align-items-center"
-                                      title="Tooltip on top"
+                                      title="Company OKR"
                                     >
                                       <p>CO</p>
                                     </div>
-                                    <div className="objtype-tag d-flex justify-content-center align-items-center">
+                                  )}
+                                  {dropdownValue !== "Detailed" && (
+                                    <div
+                                      className="objtype-tag d-flex justify-content-center align-items-center"
+                                      title={items.obj_period_type}
+                                    >
                                       <p>
-                                        {subItem.obj_period_type ===
+                                        {items.obj_period_type ===
                                         "A - Aspirational"
                                           ? "A"
-                                          : subItem.obj_period_type ===
+                                          : items.obj_period_type ===
                                             "L - Learning"
                                           ? "L"
-                                          : subItem.obj_period_type ===
+                                          : items.obj_period_type ===
                                             "C - Committed"
                                           ? "C"
                                           : null}
                                       </p>
                                     </div>
-                                  </div>
+                                  )}
+
+                                  <div
+                                    className="mark-as"
+                                    onClick={() =>
+                                      handleMarkAsClick(i, items.id)
+                                    }
+                                    style={{
+                                      backgroundColor: items.important
+                                        ? "red"
+                                        : "#d9d9d9",
+                                    }}
+                                  ></div>
                                 </div>
-                                <div
-                                  className="mark-as"
-                                  onClick={() =>
-                                    handleMarkAsClickKey(i, subItem.id)
-                                  }
-                                  style={{
-                                    backgroundColor: subItem.important
-                                      ? "red"
-                                      : "#d9d9d9",
-                                  }}
-                                ></div>
                               </div>
                             </div>
+                           
                           </div>
-                        </div>
-                        {dropdownValue === "Detailed" && (
-                          <div className="keyDetailDiv">
-                            <div className="w-100 d-flex justify-content-between align-items-center">
-                              <p className="detailTitle">
-                                {subItem.objective_name}
-                              </p>
-                              <div>
-                                <i
-                                  class="fa fa-pencil detailIcon"
-                                  aria-hidden="true"
-                                ></i>
-                                <i
-                                  class="fa fa-trash detailIcon"
-                                  aria-hidden="true"
-                                  data-bs-toggle="modal"
-                                  data-bs-target={`#exampleModalkey${i}`}
-                                ></i>
-                              </div>
-                              <div
-                              class="modal fade"
-                              id={`exampleModalkey${i}`}
-                              tabindex="-1"
-                              aria-labelledby="exampleModalLabel"
-                              aria-hidden="true"
-                            >
-                              <div class="modal-dialog">
-                                <div class="modal-content">
-                                  <div class="modal-header">
-                                    <h1
-                                      class="modal-title fs-5"
-                                      id="exampleModalLabel"
+                          {dropdownValue === "Detailed" && (
+                              <div className="w-100 detailDiv">
+                                <div className="w-100 d-flex justify-content-between align-items-center">
+                                  <p className="detailTitle">
+                                    {items.objective_name}
+                                  </p>
+                                  <div>
+                                    <i
+                                      class="fa fa-pencil detailIcon"
+                                      aria-hidden="true"
+                                      onClick={(e) => objectiveEdit(items, e)}
+                                    ></i>
+                                    <i
+                                      class="fa fa-trash detailIcon cursor-pointer"
+                                      aria-hidden="true"
+                                      data-bs-toggle="modal"
+                                      data-bs-target={`#exampleModal${i}`}
+                                    ></i>
+                                    <div
+                                      class="modal fade"
+                                      id={`exampleModal${i}`}
+                                      tabindex="-1"
+                                      aria-labelledby="exampleModalLabel"
+                                      aria-hidden="true"
                                     >
-                                      Confirmation
-                                    </h1>
-                                    <button
-                                      type="button"
-                                      class="btn-close"
-                                      data-bs-dismiss="modal"
-                                      aria-label="Close"
-                                    ></button>
+                                      <div class="modal-dialog">
+                                        <div class="modal-content">
+                                          <div class="modal-header">
+                                            <h1
+                                              class="modal-title fs-5"
+                                              id="exampleModalLabel"
+                                            >
+                                              Confirmation
+                                            </h1>
+                                            <button
+                                              type="button"
+                                              class="btn-close"
+                                              data-bs-dismiss="modal"
+                                              aria-label="Close"
+                                            ></button>
+                                          </div>
+                                          <div class="modal-body">
+                                            Are you sure you want to delete this
+                                            objective?
+                                          </div>
+                                          <div class="modal-footer">
+                                            <button
+                                              type="button"
+                                              class="subBtn"
+                                              data-bs-dismiss="modal"
+                                            >
+                                              No
+                                            </button>
+                                            <button
+                                              onClick={() =>
+                                                objectiveDelete(items.id)
+                                              }
+                                              data-bs-dismiss="modal"
+                                              type="button"
+                                              class="subBtn"
+                                            >
+                                              Yes
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
                                   </div>
-                                  <div class="modal-body">
-                                    Are you sure you want to delete this
-                                    Key result?
-                                  </div>
-                                  <div class="modal-footer">
-                                    <button
-                                      type="button"
-                                      class="subBtn"
-                                      data-bs-dismiss="modal"
-                                    >
-                                      No
-                                    </button>
-                                    <button
-                                      onClick={()=>objectiveDelete(subItem.id)}
-                                      data-bs-dismiss="modal"
-                                      type="button"
-                                      class="subBtn"
-                                      
-                                    >
-                                      Yes
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            </div>
-                            <div className="w-100 d-flex justify-content-between align-items-center mt-3">
-                              <p className="detailTitle">
-                                {formatDate(subItem.created_at)}{" "}
-                                <i class="fas fa-clock"></i>
-                              </p>
-                              <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
-                                <div
-                                  className="ComTeamName d-flex justify-content-center align-items-center"
-                                  title="Tooltip on top"
-                                >
-                                  <p>CO</p>
                                 </div>
                                 <div className="w-100 d-flex justify-content-between align-items-center mt-3">
                                   <p className="detailTitle">
-                                    {formatDate(subItem.created_at)}{" "}
+                                    {formatDate(items.created_at)}{" "}
                                     <i class="fas fa-clock"></i>
                                   </p>
                                   <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
@@ -886,13 +776,13 @@ function CompanyOKR({ dropdownValue }) {
                                     </div>
                                     <div className="objtype-tag d-flex justify-content-center align-items-center">
                                       <p>
-                                        {subItem.obj_period_type ===
+                                        {items.obj_period_type ===
                                         "A - Aspirational"
                                           ? "A"
-                                          : subItem.obj_period_type ===
+                                          : items.obj_period_type ===
                                             "L - Learning"
                                           ? "L"
-                                          : subItem.obj_period_type ===
+                                          : items.obj_period_type ===
                                             "C - Committed"
                                           ? "C"
                                           : null}
@@ -902,236 +792,428 @@ function CompanyOKR({ dropdownValue }) {
                                 </div>
                               </div>
                             )}
-
+                        </div>
+                        {items.key_results &&
+                          items.key_results.map((subItem, subIndex) => (
+                            console.log('subitem--->',subItem),
                             <div
-                              id={`collapseIn${subIndex}`}
-                              class="accordion-collapse collapse disIn text-start kr-dtl-title"
+                              key={subIndex}
+                              id={`accordionExample-${i}`}
+                              className={`accordion-collapse collapse ${
+                                i === 0 && "show"
+                              } ${dropdownValue === "Detailed" && "show"}`}
+                              aria-labelledby="headingOne"
+                              data-bs-parent="#accordionExample"
                             >
-                              <p>{items.objective_name}</p>
-                              <div className="readmore-content">
-                                {items.objective_details}
-                              </div>
-                              <div className="p-3">
-                                {/* Progress Bar */}
-                                <div className="d-flex align-items-center mb-3">
-                                  <input
-                                    type="range"
-                                    min="0"
-                                    max="100"
-                                    value={progressKey.progress}
-                                    onChange={(e) =>
-                                      updateProgress(e.target.value)
-                                    }
-                                    className="form-range flex-grow-1"
-                                    style={{
-                                      height: "6px",
-                                      marginRight: "10px",
-                                      background: `linear-gradient(to right, #15E1A4 ${progressKey.progress}%, #fff ${progressKey.progress}%)`, 
-                                    }}
-                                  />
-
+                              <div
+                                className="accordion-body p0 m0 accordion-button mb-2"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target={`#collapseIn${subIndex}`}
+                                aria-expanded="false"
+                                aria-controls="collapseOne"
+                                onClick={() => objectiveWithKeyResult(subItem)}
+                              >
+                                <div
+                                  className="kr ComKeypercentTracker position-relative"
+                                  style={{
+                                    borderRadius:
+                                      dropdownValue === "Detailed" &&
+                                      "6px 6px 0px 0px",
+                                  }}
+                                >
                                   <div
-                                    className="progress-bar"
-                                    role="progressbar"
-                                    // style={{ backgroundColor: "#15E1A4",  height: "6px",}}
-                                    aria-valuenow={progressKey.progress}
-                                    aria-valuemin="0"
-                                    aria-valuemax="100"
+                                    className="progress-fill"
+                                    style={{
+                                      width: `${subItem.progress}%`,
+                                      backgroundColor: objPercentFn(
+                                        subItem.progress
+                                      ),
+                                      height: "100%",
+                                      position: "absolute",
+                                      top: 0,
+                                      left: 0,
+                                      borderRadius: "0px 6px 6px 0px",
+                                      zIndex: 1,
+                                    }}
                                   ></div>
 
                                   <div
-                                    className="font-weight-bold"
-                                    style={{ minWidth: "25px", marginLeft: "10px"  }}
+                                    className="content-wrapper d-flex justify-content-between align-items-center w-100"
+                                    style={{ position: "relative", zIndex: 2 }}
                                   >
-                                    {progressKey.progress}%
+                                    <p className="ComObjName m25">
+                                      {subItem.progress + "% "}
+                                      {subItem.objective_name}
+                                    </p>
+                                    <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
+                                      <div
+                                        className="ComTeamName d-flex justify-content-center align-items-center"
+                                        title="Company OKR"
+                                      >
+                                        <p>CO</p>
+                                      </div>
+                                      <div className="objtype-tag d-flex justify-content-center align-items-center">
+                                        <p>
+                                          {subItem.obj_period_type ===
+                                          "A - Aspirational"
+                                            ? "A"
+                                            : subItem.obj_period_type ===
+                                              "L - Learning"
+                                            ? "L"
+                                            : subItem.obj_period_type ===
+                                              "C - Committed"
+                                            ? "C"
+                                            : null}
+                                        </p>
+                                      </div>
+                                      <div
+                                        className="mark-as"
+                                        onClick={() =>
+                                          handleMarkAsClickKey(i, subItem.id)
+                                        }
+                                        style={{
+                                          backgroundColor: subItem.important
+                                            ? "red"
+                                            : "#d9d9d9",
+                                        }}
+                                      ></div>
+                                    </div>
                                   </div>
                                 </div>
-                                <div className="comment-section user">
-                                  <textarea
-                                    className="comment-textarea"
-                                    placeholder="Add Check-in comment"
-                                    value={comments}
-                                    onChange={(e) =>
-                                      setComments(e.target.value)
-                                    }
-                                  ></textarea>
-                                  <button
-                                    className="check-in-button user"
-                                    onClick={handleCheckIn}
-                                    // disabled="disabled"
-                                  >
-                                    Check-in
-                                  </button>
-                                </div>
+                              </div>
 
-                                {/* Timeline Content */}
-
-                                <div className="comments-section">
-                                  {subItem.logs.map((log, index) => (
-                                    <div key={index} className="comment-item">
-                                      <div className="line-dot-wrapper">
-                                        <div className="dot"></div>
-                                        <div className="line"></div>
-                                      </div>
-                                      <div className="p-3 border rounded bg-light mb-3" id={`targetId-${index}`}>
-                                        <p className="mb-1">
-                                          <strong>Update:</strong>{" "}
-                                          {`Moved from ${
-                                            log.old_progress || 0
-                                          }% to ${log.progress}%`}
-                                        </p>
-                                        <p className="mb-1">
-                                          <strong>Modified on:</strong>{" "}
-                                          {formatDate(log.created_at)}
-                                        </p>
-                                        <p className="mb-0">
-                                          <strong>Comments:</strong>{" "}
-                                          {log.notes_checkin || "No comments"}
-                                        </p>
-                                             
-                                        <div className="mt-2" id={`targetId-${index}`} >
-                                          <a
-                                            className="text-primary"
-                                            onClick={() =>
-                                              handleAddCommentClick(index)
-                                            }
-                                            style={{
-                                              cursor: "pointer",
-                                              textDecoration: "underline",
-                                            }}
-                                          >
-                                            Add Comment
-                                          </a>
-                                        </div>
-                                        {activeCommentIndex === index && (
-                                          <div className="mt-2" data-bs-target={`#targetId-${index}`}>
-                                            <textarea
-                                              className="form-control"
-
-                                              rows="3"
-                                              placeholder="Add comments"
-                                              value={commentText[index] || ""}
-                                              onChange={(e) =>
-                                                handleChangeCommentText(
-                                                  index,
-                                                  e.target.value
-                                                )
-                                              }
-                                            ></textarea>
-                                            <button
-                                              className="button-kr mt-2"
-                                              onClick={() =>
-                                                handleCommentSubmit({
-                                                  subItem,
-                                                  commentText,
-                                                  index,
-                                                })
-                                              }
-                                              disabled={
-                                                !commentText[index]?.trim()
-                                              }
+                              {dropdownValue === "Detailed" && (
+                                <div className="keyDetailDiv">
+                                  <div className="w-100 d-flex justify-content-between align-items-center">
+                                    <p className="detailTitle">
+                                      {subItem.objective_name}
+                                    </p>
+                                    <div>
+                                      <i
+                                        class="fa fa-pencil detailIcon"
+                                        aria-hidden="true"
+                                      ></i>
+                                      <i
+                                        class="fa fa-trash detailIcon"
+                                        aria-hidden="true"
+                                        data-bs-toggle="modal"
+                                        data-bs-target={`#exampleModalkey${i}`}
+                                      ></i>
+                                    </div>
+                                    <div
+                                      class="modal fade"
+                                      id={`exampleModalkey${i}`}
+                                      tabindex="-1"
+                                      aria-labelledby="exampleModalLabel"
+                                      aria-hidden="true"
+                                    >
+                                      <div class="modal-dialog">
+                                        <div class="modal-content">
+                                          <div class="modal-header">
+                                            <h1
+                                              class="modal-title fs-5"
+                                              id="exampleModalLabel"
                                             >
-                                              Submit
+                                              Confirmation
+                                            </h1>
+                                            <button
+                                              type="button"
+                                              class="btn-close"
+                                              data-bs-dismiss="modal"
+                                              aria-label="Close"
+                                            ></button>
+                                          </div>
+                                          <div class="modal-body">
+                                            Are you sure you want to delete this
+                                            Key result?
+                                          </div>
+                                          <div class="modal-footer">
+                                            <button
+                                              type="button"
+                                              class="subBtn"
+                                              data-bs-dismiss="modal"
+                                            >
+                                              No
+                                            </button>
+                                            <button
+                                              onClick={() =>
+                                                objectiveDelete(subItem.id)
+                                              }
+                                              data-bs-dismiss="modal"
+                                              type="button"
+                                              class="subBtn"
+                                            >
+                                              Yes
                                             </button>
                                           </div>
-                                        )}
-
-                                        {/* Display Comments */}
-                                        {expandedIndex === index && (
-                                          <div className="p-3 bg-light">
-                                            {/* Render additional details */}
-                                            {subItem.logs[index].comments &&
-                                              subItem.logs[index].comments.map(
-                                                (comment, commentIndex) => (
-                                                  console.log(
-                                                    "comments-->",
-                                                    comment
-                                                  ),
-                                                  (
-                                                    <div
-                                                      key={commentIndex}
-                                                      className="p-3 mt-3 rounded"
-                                                      style={{
-                                                        backgroundColor:
-                                                          "#3366ff",
-                                                        color: "#fff",
-                                                      }}
-                                                    >
-                                                      <p className="mb-1">
-                                                        <strong>
-                                                          Comments:
-                                                        </strong>{" "}
-                                                        {comment.message}
-                                                      </p>
-                                                      <p className="mb-1">
-                                                        <strong>
-                                                          Modified on:
-                                                        </strong>{" "}
-                                                        {formatDate(
-                                                          comment.created_at
-                                                        )}
-                                                      </p>
-                                                      <p className="mb-0">
-                                                        <strong>
-                                                          Commented By:
-                                                        </strong>{" "}
-                                                        {
-                                                          comment.user_display_name
-                                                        }
-                                                      </p>
-                                                    </div>
-                                                  )
-                                                )
-                                              )}
-                                          </div>
-                                        )}
-                                      </div>
-                                      <div className="view-content">
-                                        {expandedIndex === index ? (
-                                          <a
-                                            className="text-primary"
-                                            onClick={() =>
-                                              handleViewMoreClick(index)
-                                            }
-                                            style={{
-                                              cursor: "pointer",
-                                              textDecoration: "underline",
-                                            }}
-                                          >
-                                            View Less
-                                          </a>
-                                        ) : (
-                                          <a
-                                            className="text-primary"
-                                            onClick={() =>
-                                              handleViewMoreClick(index)
-                                            }
-                                            style={{
-                                              cursor: "pointer",
-                                              textDecoration: "underline",
-                                            }}
-                                          >
-                                            View More
-                                          </a>
-                                        )}
+                                        </div>
                                       </div>
                                     </div>
-                                  ))}
+                                  </div>
+                                  <div className="w-100 d-flex justify-content-between align-items-center mt-3">
+                                    <p className="detailTitle">
+                                      {formatDate(subItem.created_at)}{" "}
+                                      <i class="fas fa-clock"></i>
+                                    </p>
+                                    <div className="ComObjIndicato d-flex justify-content-center align-items-center gap-3">
+                                      <div
+                                        className="ComTeamName d-flex justify-content-center align-items-center"
+                                        title="Tooltip on top"
+                                      >
+                                        <p>CO</p>
+                                      </div>
+                                      <div className="objtype-tag d-flex justify-content-center align-items-center">
+                                        <p>
+                                          {subItem.obj_period_type ===
+                                          "A - Aspirational"
+                                            ? "A"
+                                            : subItem.obj_period_type ===
+                                              "L - Learning"
+                                            ? "L"
+                                            : subItem.obj_period_type ===
+                                              "C - Committed"
+                                            ? "C"
+                                            : null}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              <div
+                                id={`collapseIn${subIndex}`}
+                                className="accordion-collapse collapse disIn text-start kr-dtl-title"
+                              >
+                                <p>{items.objective_name}</p>
+                                <div className="readmore-content">
+                                  {items.objective_details}
+                                </div>
+                                <div className="p-3">
+                                  <div className="d-flex align-items-center mb-3">
+                                    <input
+                                      type="range"
+                                      min="0"
+                                      max="100"
+                                      value={progressKey.progress}
+                                      onChange={(e) =>
+                                        updateProgress(e.target.value)
+                                      }
+                                      className="form-range flex-grow-1"
+                                      style={{
+                                        height: "6px",
+                                        marginRight: "10px",
+                                        background: `linear-gradient(to right, #15E1A4 ${progressKey.progress}%, #fff ${progressKey.progress}%)`,
+                                      }}
+                                    />
+                                    <div
+                                      className="font-weight-bold"
+                                      style={{
+                                        minWidth: "25px",
+                                        marginLeft: "10px",
+                                      }}
+                                    >
+                                      {progressKey.progress}%
+                                    </div>
+                                  </div>
+                                 
+                                  <div className="comment-section user">
+                                    <textarea
+                                      className="comment-textarea"
+                                      placeholder="Add Check-in comment"
+                                      value={comments}
+                                      onChange={(e) =>
+                                        setComments(e.target.value)
+                                      }
+                                    ></textarea>
+                                    <button
+                                      className="check-in-button user"
+                                      onClick={() => handleCheckIn(subItem, progressKey, comments)}
+                                    >
+                                      Check-in
+                                    </button>
+                                  </div>
+
+                                  <div className="comments-section">
+                                    {subItem.logs.map((log, index) => {
+                                      // Handle expanded comments
+                                      const isExpanded =
+                                        showFullComments[index];
+                                      const displayedComments = isExpanded
+                                        ? log.comments
+                                        : log.comments.slice(0, 1);
+                                        console.log('displayedComments----',displayedComments)
+
+                                      return (
+                                        <div
+                                          key={index}
+                                          className="comment-item"
+                                        >
+                                          <div className="line-dot-wrapper">
+                                            <div className="dot"></div>
+                                            <div
+                                              className="line"
+                                              // style={{
+                                              //   height: `${
+                                              //     log.comments.length * 50 + 50
+                                              //   }px`,
+                                              // }}
+                                            ></div>{" "}
+                                            {/* Adjust height dynamically */}
+                                          </div>
+
+                                          <div className="p-3 border rounded bg-light mb-3">
+                                            {/* Update Info */}
+                                              <p className="mb-1">
+                                                <strong>Update:</strong>{" "}
+                                                {`Moved from ${
+                                                  log.old_progress || 0
+                                                }% to ${log.progress}%`}
+                                              </p>
+                                              <p className="mb-1">
+                                                <strong>Modified on:</strong>{" "}
+                                                {formatDate(log.created_at)}
+                                              </p>
+                                              <p className="mb-0">
+                                                <strong>comments:</strong>{" "}
+                                                {log.notes_checkin ||
+                                                  "No comments"}
+                                              </p>
+
+                                            {/* Add Comment Section */}
+                                            <div>
+                                              <a
+                                                className="text-primary"
+                                                onClick={() =>
+                                                  handleAddCommentClick(index)
+                                                }
+                                                style={{
+                                                  cursor: "pointer",
+                                                  textDecoration: "underline",
+                                                }}
+                                              >
+                                                Add Comment
+                                              </a>
+                                              {activeCommentIndex === index && (
+                                                <div className="mt-2">
+                                                  <textarea
+                                                    className="form-control"
+                                                    rows="3"
+                                                    placeholder="Add comments"
+                                                    value={
+                                                      commentText[index] || ""
+                                                    }
+                                                    onChange={(e) =>
+                                                      handleChangeCommentText(
+                                                        index,
+                                                        e.target.value
+                                                      )
+                                                    }
+                                                  ></textarea>
+                                                  <button
+                                                    className="btn btn-primary mt-2"
+                                                    onClick={() =>
+                                                      handleCommentSubmit({
+                                                        subItem,
+                                                        commentText,
+                                                        index,
+                                                      })
+                                                    }
+                                                    disabled={
+                                                      !commentText[
+                                                        index
+                                                      ]?.trim()
+                                                    }
+                                                  >
+                                                    Submit
+                                                  </button>
+                                                </div>
+                                              )}
+                                            </div>
+
+                                            {/* Comments Section - Display all comments in a single container */}
+                                            <div className="comments-container">
+                                              {displayedComments.map(
+                                                (comment, commentIndex) => (
+                                                  <div
+                                                    key={commentIndex}
+                                                    className="comment"
+                                                    style={{
+                                                      backgroundColor:
+                                                        "#3366ff",
+                                                      color: "#fff",
+                                                      marginBottom: "10px",
+                                                      padding: "10px",
+                                                      borderRadius: "5px",
+                                                    }}
+                                                  >
+                                                    <p className="mb-1">
+                                                      <strong>Comment:</strong>{" "}
+                                                      {comment.message}
+                                                    </p>
+                                                    <p className="mb-1">
+                                                      <strong>
+                                                        Modified on:
+                                                      </strong>{" "}
+                                                      {formatDate(
+                                                        comment.created_at
+                                                      )}
+                                                    </p>
+                                                    <p className="mb-0">
+                                                      <strong>
+                                                        Commented By:
+                                                      </strong>{" "}
+                                                      {
+                                                        comment.user_display_name
+                                                      }
+                                                    </p>
+                                                  </div>
+                                                )
+                                              )}
+                                            </div>
+
+                                            {/* View More/Less Toggle */}
+                                           
+                                          </div>
+                                          {log.comments.length > 1 && (
+                                              <button
+                                                onClick={() =>
+                                                  toggleComments(index)
+                                                }
+                                                className="view-toggle-btn mt-2"
+                                              >
+                                                {isExpanded
+                                                  ? "View Less"
+                                                  : "View More"}
+                                              </button>
+                                            )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        )
-                      )
-                    )}
-                </div>
-              </div>
-            )
+                          ))}
+                      </div>
+                    </div>
+                  )
+              )}
+          </>
+        ) : (
+          <>
+            <div className="w-100 loaderDiv">
+              <div className="loader"></div>
+            </div>
+          </>
         )}
+      </>
+
       <div className="btnDiv d-flex justify-content-between align-items-center w-100">
         <button
           disabled={isObjbtn}
-          style={{ opacity: isObjbtn && 0.6 }}
+          style={{ opacity: isObjbtn ? 0.6 : 1 }}
           onClick={openFrom}
         >
           Create Objective
@@ -1139,14 +1221,14 @@ function CompanyOKR({ dropdownValue }) {
         <button
           onClick={keyFrom}
           disabled={isKeybtn}
-          style={{ opacity: isKeybtn && 0.6 }}
+          style={{ opacity: isKeybtn ? 0.6 : 1 }}
         >
           Create Key Result
         </button>
       </div>
-      {/* create form */}
+
       {isObj && (
-        <div className=" mt-4">
+        <div className="mt-4">
           <form className="p-2 border rounded">
             <div className="mb-3 text-start">
               <label
@@ -1161,6 +1243,7 @@ function CompanyOKR({ dropdownValue }) {
                 name="objective_name"
                 className="form-control"
                 placeholder="Please Provide Your Objective"
+                ref={firstInputRef}
                 value={formData.objective_name}
                 onChange={handleChange}
               />
@@ -1200,7 +1283,9 @@ function CompanyOKR({ dropdownValue }) {
                 value={formData.obj_period_type}
                 onChange={handleChange}
               >
-                <option value="" disabled>Select Type</option>
+                <option value="" disabled>
+                  Select Type
+                </option>
                 <option value="L - Learning">L - Learning</option>
                 <option value="C - Committed">C - Committed</option>
                 <option value="A - Aspirational">A - Aspirational</option>
@@ -1233,15 +1318,20 @@ function CompanyOKR({ dropdownValue }) {
               <button onClick={openFrom} type="button" className="subBtn">
                 Cancel
               </button>
-              <button type="submit" className="subBtn" onClick={handleSubmit}>
-                Submit
+              <button
+                type="submit"
+                className="subBtn"
+                onClick={isObjEdit ? handleEdit : handleSubmit}
+              >
+                {isObjEdit ? "Update" : "Submit"}
               </button>
             </div>
           </form>
         </div>
       )}
+
       {isKey && (
-        <div className=" mt-4">
+        <div className="mt-4">
           <form className="p-2 border rounded">
             <div className="mb-3 text-start">
               <label
@@ -1256,6 +1346,7 @@ function CompanyOKR({ dropdownValue }) {
                 name="objective_name"
                 className="form-control"
                 placeholder="Please Provide Your Key Result"
+                ref={firstInputRef}
                 value={keyformData.objective_name}
                 onChange={keyhandleChange}
               />
@@ -1297,7 +1388,9 @@ function CompanyOKR({ dropdownValue }) {
                 value={keyformData.obj_period_type}
                 onChange={keyhandleChange}
               >
-                <option value="" disabled>Select Type</option>
+                <option value="" disabled>
+                  Select Type
+                </option>
                 <option value="L - Learning">L - Learning</option>
                 <option value="C - Committed">C - Committed</option>
                 <option value="A - Aspirational">A - Aspirational</option>

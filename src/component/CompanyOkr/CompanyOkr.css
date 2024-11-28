@@ -2,6 +2,12 @@ p{
     padding: 0;
     margin: 0;
   }
+
+  .loaderDiv{
+    display: flex;
+    justify-content: center;
+   }
+
 .companyDiv{
     background-color: #fff;
     margin: 0px;
@@ -108,7 +114,7 @@ p{
    height: 41px;
    float: right;
    padding: 0 10px;
-   margin: 5px 0px;
+   /* margin: 5px 0px; */
    color: #000000;
    font-size: 12px;
    display: flex;
@@ -233,9 +239,9 @@ p{
   border-left: 1px solid #d2cece7a;
   border-right: 1px solid #d2cece7a;
   border-bottom: 1px solid #d2cece7a;
-  border-radius: 5px;
-  border-top-right-radius: 0px;
-  border-top-left-radius: 0px;
+  border-radius: 0px 0px 5px 5px !important;
+  /* border-top-right-radius: 0px;
+  border-top-left-radius: 0px; */
   margin-top: 0px;
   background-color: #fff;
 }
@@ -254,8 +260,8 @@ p{
   border-right: 1px solid #d2cece7a;
   border-bottom: 1px solid #d2cece7a;
   border-radius: 5px;
-  border-top-right-radius: 0px;
-  border-top-left-radius: 0px;
+  /* border-top-right-radius: 0px;
+  border-top-left-radius: 0px; */
   margin-top: 0px;
   background-color: #fff;
   width: 89%;
@@ -389,4 +395,12 @@ input[type="range"].form-range::-moz-range-thumb {
   cursor: pointer;
   border: 2px solid #fff;
   box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+}
+
+.view-toggle-btn {
+  background-color: transparent;
+  border: none;
+  color: #34393d;
+  cursor: pointer;
+    text-decoration: underline;
 }
